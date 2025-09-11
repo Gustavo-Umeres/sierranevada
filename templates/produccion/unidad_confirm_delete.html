@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-6">
+        <div class="card border-danger shadow-sm">
+            <div class="card-body p-4 p-md-5">
+                <h1 class="card-title h3 mb-4">Eliminar {{ tipo_unidad }}</h1>
+                <p>¿Estás seguro de que quieres eliminar permanentemente el {{ tipo_unidad|lower }} <strong>"{{ object.codigo }}"</strong>?</p>
+                <p class="text-danger fw-bold">Esta acción no se puede deshacer.</p>
+                
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="mt-4 border-top pt-4">
+                        <button type="submit" class="btn btn-danger px-4">Sí, Eliminar</button>
+                        {% if tipo_unidad == 'Bastidor' %}<a href="{% url 'bastidor-list' %}" class="btn btn-light px-4 ms-2">Cancelar</a>{% endif %}
+                        {% if tipo_unidad == 'Artesa' %}<a href="{% url 'artesa-list' %}" class="btn btn-light px-4 ms-2">Cancelar</a>{% endif %}
+                        {% if tipo_unidad == 'Jaula' %}<a href="{% url 'jaula-list' %}" class="btn btn-light px-4 ms-2">Cancelar</a>{% endif %}
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

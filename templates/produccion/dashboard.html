@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block content %}
+<h1 class="mb-4">Módulo de Producción</h1>
+<div class="row row-cols-1 row-cols-md-3 g-4 text-center">
+    <div class="col">
+        <div class="card h-100">
+            <img src="https://via.placeholder.com/300x200/86B6F6/FFFFFF?text=Ovas" class="card-img-top" alt="Ovas">
+            <div class="card-body">
+                <h5 class="card-title">Ovas</h5>
+                <p class="card-text">Gestión de bastidores y lotes de ovas.</p>
+            </div>
+            <div class="card-footer"><a href="{% url 'bastidor-list' %}" class="btn btn-primary">Ir a Ovas</a></div>
+        </div>
+    </div>
+    <div class="col">
+        <div class="card h-100">
+            <img src="https://via.placeholder.com/300x200/74E291/FFFFFF?text=Alevines" class="card-img-top" alt="Alevines">
+            <div class="card-body">
+                <h5 class="card-title">Alevines</h5>
+                <p class="card-text">Gestión de artesas y lotes de alevines.</p>
+            </div>
+            <div class="card-footer"><a href="{% url 'artesa-list' %}" class="btn btn-primary">Ir a Alevines</a></div>
+        </div>
+    </div>
+    <div class="col">
+        <div class="card h-100">
+            <img src="https://via.placeholder.com/300x200/40A2E3/FFFFFF?text=Engorde" class="card-img-top" alt="Engorde">
+            <div class="card-body">
+                <h5 class="card-title">Engorde</h5>
+                <p class="card-text">Gestión de jaulas y lotes de engorde.</p>
+            </div>
+            <div class="card-footer"><a href="{% url 'jaula-list' %}" class="btn btn-primary">Ir a Engorde</a></div>
+        </div>
+    </div>
+</div>
+{% endblock %}

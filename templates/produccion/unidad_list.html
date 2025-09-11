@@ -1,0 +1,193 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4 border-bottom pb-3">
+    <h1 class="h2">Gestión de {{ tipo_unidad }} (Etapa: {{ etapa }})</h1>
+    {% if tipo_unidad == 'Bastidores' %}<a href="{% url 'bastidor-create' %}" class="btn btn-primary"><i class="bi bi-plus-circle me-2"></i>Añadir {{ tipo_unidad|slice:":-2" }}</a>{% endif %}
+    {% if tipo_unidad == 'Artesas' %}<a href="{% url 'artesa-create' %}" class="btn btn-primary"><i class="bi bi-plus-circle me-2"></i>Añadir {{ tipo_unidad|slice:":-1" }}</a>{% endif %}
+    {% if tipo_unidad == 'Jaulas' %}<a href="{% url 'jaula-create' %}" class="btn btn-primary"><i class="bi bi-plus-circle me-2"></i>Añadir {{ tipo_unidad|slice:":-1" }}</a>{% endif %}
+</div>
+
+<div class="list-group">
+    {% for unidad in unidades %}
+        <button type="button" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center"
+                data-bs-toggle="modal" data-bs-target="#detailModal" 
+                data-unidad-id="{{ unidad.pk }}" 
+                data-tipo-unidad="{{ tipo_unidad_slug }}">
+            <div class="text-start">
+                <h5 class="mb-1">{{ unidad.codigo }}</h5>
+                <small class="text-muted">Capacidad: {{ unidad.capacidad_maxima_unidades }} unidades</small>
+            </div>
+            {% if unidad.esta_disponible %}<span class="badge bg-secondary rounded-pill">Disponible</span>{% else %}<span class="badge bg-success rounded-pill">Ocupado</span>{% endif %}
+        </button>
+    {% empty %}
+        <p class="text-center text-muted mt-4">No hay {{ tipo_unidad|lower }} registradas.</p>
+    {% endfor %}
+</div>
+
+<div class="modal fade" id="detailModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header"><h5 class="modal-title" id="detailModalTitle">Detalle</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <div class="modal-body" id="detailModalBody"></div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="addLoteModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header"><h5 class="modal-title">Añadir Ovas a Bastidor <span id="addLoteBastidorCodigo"></span></h5><button type="button" class="btn-close" data-bs-target="#detailModal" data-bs-toggle="modal"></button></div>
+            <div class="modal-body">
+                <form id="addLoteForm" autocomplete="off">
+                    <div class="mb-3">
+                        <label for="id_cantidad_total_peces" class="form-label">Cantidad de Ovas</label>
+                        <input type="number" name="cantidad_total_peces" class="form-control" id="id_cantidad_total_peces" required min="1">
+                        <div class="form-text">Capacidad máxima: <span id="addLoteCapacidad"></span> ovas.</div>
+                    </div>
+                    <input type="hidden" id="addLoteBastidorId" name="bastidor_id">
+                    <div id="addLoteErrors" class="text-danger small mt-2"></div>
+                    <div class="d-flex justify-content-end mt-3">
+                        <button type="button" class="btn btn-light me-2" data-bs-target="#detailModal" data-bs-toggle="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">Guardar Lote</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const detailModalEl = document.getElementById('detailModal');
+    if (!detailModalEl) return;
+
+    const detailModal = new bootstrap.Modal(detailModalEl);
+    const addLoteModal = new bootstrap.Modal(document.getElementById('addLoteModal'));
+    const csrfToken = document.querySelector('input[name=csrfmiddlewaretoken]').value;
+
+    detailModalEl.addEventListener('show.bs.modal', function (event) {
+        const button = event.relatedTarget;
+        if (!button || !button.hasAttribute('data-unidad-id')) {
+            console.error("El botón que abrió el modal no tiene los atributos necesarios.");
+            return;
+        }
+
+        const unidadId = button.getAttribute('data-unidad-id');
+        const tipoUnidad = button.getAttribute('data-tipo-unidad');
+        const modalTitle = detailModalEl.querySelector('.modal-title');
+        const modalBody = detailModalEl.querySelector('.modal-body');
+
+        modalTitle.textContent = `Detalle de ${tipoUnidad.charAt(0).toUpperCase() + tipoUnidad.slice(1)}`;
+        modalBody.innerHTML = '<div class="text-center"><div class="spinner-border spinner-border-sm" role="status"></div> Cargando...</div>';
+
+        fetch(`/produccion/api/unidad/${tipoUnidad}/${unidadId}/`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`Error en la red: ${response.status} ${response.statusText}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                let content = '';
+                if (data.lote) {
+                    content = `
+                        <h5>Lote Actual: ${data.lote.codigo}</h5>
+                        <ul class="list-group list-group-flush">
+                            <li class="list-group-item d-flex justify-content-between"><span>Cantidad Total:</span> <strong id="loteCantidad">${data.lote.cantidad}</strong></li>
+                            <li class="list-group-item d-flex justify-content-between"><span>Capacidad Máxima:</span> <strong>${data.unidad.capacidad}</strong></li>
+                            <li class="list-group-item d-flex justify-content-between"><span>Alimento Diario:</span> <strong>${data.lote.alimento_diario} kg</strong></li>
+                        </ul>
+                        <hr>
+                        <h6>Registrar Bajas</h6>
+                        <form id="mortalidadForm" data-lote-id="${data.lote.id}" autocomplete="off">
+                            <div class="input-group">
+                                <input type="number" name="cantidad" class="form-control" placeholder="N° de muertos" required min="1">
+                                <button type="submit" class="btn btn-danger">Registrar</button>
+                            </div>
+                            <div id="mortalidadErrors" class="small mt-1"></div>
+                        </form>
+                    `;
+                } else {
+                    content = `<div class="text-center p-3"><p class="lead">Esta unidad está disponible.</p>`;
+                    if (tipoUnidad === 'bastidor') {
+                        content += `
+                            <button class="btn btn-success btn-lg" id="openAddLoteBtn" 
+                                    data-bastidor-id="${data.unidad.id}" data-bastidor-codigo="${data.unidad.codigo}" data-bastidor-capacidad="${data.unidad.capacidad}">
+                                <i class="bi bi-plus-circle me-2"></i>Añadir Ovas
+                            </button>
+                        `;
+                    }
+                    content += '</div>';
+                }
+                modalBody.innerHTML = content;
+            })
+            .catch(error => {
+                modalBody.innerHTML = `<p class="text-danger">Error al cargar los detalles. Revisa la consola (F12) para más información.</p>`;
+                console.error('Error en fetch de detalles:', error);
+            });
+    });
+
+    document.body.addEventListener('click', function(event) {
+        if (event.target && event.target.id === 'openAddLoteBtn') {
+            const button = event.target;
+            document.getElementById('addLoteBastidorCodigo').textContent = button.getAttribute('data-bastidor-codigo');
+            document.getElementById('addLoteCapacidad').textContent = button.getAttribute('data-bastidor-capacidad');
+            document.getElementById('addLoteBastidorId').value = button.getAttribute('data-bastidor-id');
+            document.getElementById('addLoteErrors').innerHTML = '';
+            document.getElementById('addLoteForm').reset();
+            detailModal.hide();
+            addLoteModal.show();
+        }
+    });
+
+    document.getElementById('addLoteForm').addEventListener('submit', function (event) {
+        event.preventDefault();
+        const bastidorId = document.getElementById('addLoteBastidorId').value;
+        const formData = new FormData(this);
+        const errorDiv = document.getElementById('addLoteErrors');
+        
+        fetch(`/produccion/api/lote/ova/crear/${bastidorId}/`, {
+            method: 'POST', body: formData, headers: {'X-CSRFToken': csrfToken}
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                window.location.reload();
+            } else {
+                errorDiv.textContent = data.error || 'Ocurrió un error.';
+            }
+        })
+        .catch(error => { errorDiv.textContent = 'Error de conexión.'; console.error('Error en fetch de crear lote:', error); });
+    });
+
+    document.body.addEventListener('submit', function(event) {
+        if (event.target && event.target.id === 'mortalidadForm') {
+            event.preventDefault();
+            const form = event.target;
+            const loteId = form.getAttribute('data-lote-id');
+            const errorDiv = form.querySelector('#mortalidadErrors');
+            const cantidadSpan = document.getElementById('loteCantidad');
+            const formData = new FormData(form);
+
+            fetch(`/produccion/api/lote/${lote_id}/registrar_mortalidad/`, {
+                method: 'POST', body: formData, headers: {'X-CSRFToken': csrfToken}
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    cantidadSpan.textContent = data.nueva_cantidad;
+                    form.reset();
+                    errorDiv.innerHTML = '<span class="text-success small">Bajas registradas.</span>';
+                } else {
+                    errorDiv.innerHTML = `<span class="text-danger small">${data.error || 'Ocurrió un error.'}</span>`;
+                }
+            })
+            .catch(error => { errorDiv.textContent = 'Error de conexión.'; console.error('Error en fetch de mortalidad:', error); });
+        }
+    });
+});
+</script>
+{% endblock %}

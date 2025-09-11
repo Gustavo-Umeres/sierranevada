@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-6">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body p-4 p-md-5">
+                <h1 class="card-title h3 mb-4 border-bottom pb-3">{% if object %}Editar {{ tipo_unidad }}{% else %}Añadir Nuevo {{ tipo_unidad }}{% endif %}</h1>
+                
+                <form method="post">
+                    {% csrf_token %}
+                    {{ form.as_p }}
+                    <div class="mt-4 border-top pt-4">
+                        <button type="submit" class="btn btn-primary px-4">Guardar</button>
+                        {% if tipo_unidad == 'Bastidor' %}<a href="{% url 'bastidor-list' %}" class="btn btn-light px-4 ms-2">Cancelar</a>{% endif %}
+                        {% if tipo_unidad == 'Artesa' %}<a href="{% url 'artesa-list' %}" class="btn btn-light px-4 ms-2">Cancelar</a>{% endif %}
+                        {% if tipo_unidad == 'Jaula' %}<a href="{% url 'jaula-list' %}" class="btn btn-light px-4 ms-2">Cancelar</a>{% endif %}
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block content %}
+<h1 class="mb-4">Detalle de {{ tipo_unidad }}: {{ unidad.nombre }}</h1>
+{% if lote %}
+    <div class="row g-4">
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header"><h3><i class="bi bi-info-circle-fill"></i> Información del Lote: {{ lote.codigo_lote }}</h3></div>
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item"><strong>Cantidad de Peces:</strong> {{ lote.cantidad_total_peces }}</li>
+                    <li class="list-group-item"><strong>Biomasa Actual:</strong> {{ lote.biomasa_actual_kg|floatformat:2 }} kg</li>
+                    <li class="list-group-item"><strong>Capacidad Máxima:</strong> {{ unidad.capacidad_maxima_biomasa }} kg</li>
+                    <li class="list-group-item">
+                        <strong>Biomasa Ocupada:</strong>
+                        <div class="progress" role="progressbar">
+                            <div class="progress-bar {% if biomasa_ocupada_pct > 85 %}bg-danger{% endif %}" style="width: {{ biomasa_ocupada_pct }}%">{{ biomasa_ocupada_pct }}%</div>
+                        </div>
+                         {% if biomasa_ocupada_pct > 85 %}<p class="text-danger mt-2 fw-bold">¡ALERTA! Biomasa superior al 85%.</p>{% endif %}
+                    </li>
+                </ul>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header"><h3><i class="bi bi-ui-checks"></i> Acciones</h3></div>
+                <div class="card-body">
+                    <h5>Tareas Diarias ({{ registro_hoy.fecha|date:"d/m/Y" }})</h5>
+                    <div class="d-grid gap-2 d-md-flex">
+                        <form method="post" action="{% url 'marcar-tarea' lote.id 'alimentacion' %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn {% if registro_hoy.alimentacion_realizada %}btn-success{% else %}btn-outline-secondary{% endif %}" {% if registro_hoy.alimentacion_realizada %}disabled{% endif %}><i class="bi bi-tropical-fish"></i> Alimentación</button>
+                        </form>
+                        <form method="post" action="{% url 'marcar-tarea' lote.id 'limpieza' %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn {% if registro_hoy.limpieza_realizada %}btn-success{% else %}btn-outline-secondary{% endif %}" {% if registro_hoy.limpieza_realizada %}disabled{% endif %}><i class="bi bi-trash"></i> Limpieza</button>
+                        </form>
+                    </div>
+                    <hr>
+                    <h5>Registrar Bajas</h5>
+                    <form method="post" action="{% url 'registrar-mortalidad' lote.id %}" class="d-flex">
+                        {% csrf_token %}
+                        <input type="number" name="cantidad" class="form-control me-2" placeholder="N° de muertos" required min="1">
+                        <button type="submit" class="btn btn-danger">Registrar</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+{% else %}
+    <div class="alert alert-info">Esta unidad ({{ unidad.nombre }}) se encuentra actualmente disponible.</div>
+{% endif %}
+{% endblock %}
