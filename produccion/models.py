@@ -62,10 +62,12 @@ class Lote(models.Model):
     etapa_actual = models.CharField(max_length=10, choices=ETAPAS)
     cantidad_total_peces = models.PositiveIntegerField(default=0)
     cantidad_alimento_diario = models.FloatField(default=0.0, help_text="Cantidad de alimento a dar por día (en kg)")
+    talla_min_cm = models.FloatField(null=True, blank=True, verbose_name="Talla Mínima (cm)")
+    talla_max_cm = models.FloatField(null=True, blank=True, verbose_name="Talla Máxima (cm)")
     bastidor = models.OneToOneField(Bastidor, on_delete=models.SET_NULL, null=True, blank=True, related_name='lote_actual')
     artesa = models.OneToOneField(Artesa, on_delete=models.SET_NULL, null=True, blank=True, related_name='lote_actual')
     jaula = models.OneToOneField(Jaula, on_delete=models.SET_NULL, null=True, blank=True, related_name='lote_actual')
-    fecha_ingreso_etapa = models.DateField(auto_now_add=True)
+    fecha_ingreso_etapa = models.DateField(default=timezone.now)
     peso_promedio_pez_gr = models.FloatField(default=0.0, help_text="Peso promedio en gramos")
     tipo_alimento = models.CharField(max_length=100, blank=True)
     

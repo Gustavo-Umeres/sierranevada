@@ -1,25 +1,42 @@
 {% extends "base.html" %}
 
 {% block content %}
+{% csrf_token %}
+
 <div class="d-flex justify-content-between align-items-center mb-4 border-bottom pb-3">
     <h1 class="h2">Gestión de {{ tipo_unidad }} (Etapa: {{ etapa }})</h1>
-    {% if tipo_unidad == 'Bastidores' %}<a href="{% url 'bastidor-create' %}" class="btn btn-primary"><i class="bi bi-plus-circle me-2"></i>Añadir {{ tipo_unidad|slice:":-2" }}</a>{% endif %}
-    {% if tipo_unidad == 'Artesas' %}<a href="{% url 'artesa-create' %}" class="btn btn-primary"><i class="bi bi-plus-circle me-2"></i>Añadir {{ tipo_unidad|slice:":-1" }}</a>{% endif %}
-    {% if tipo_unidad == 'Jaulas' %}<a href="{% url 'jaula-create' %}" class="btn btn-primary"><i class="bi bi-plus-circle me-2"></i>Añadir {{ tipo_unidad|slice:":-1" }}</a>{% endif %}
+    {% if tipo_unidad == 'Bastidores' %}<a href="{% url 'bastidor-create' %}" class="btn btn-primary"><i class="bi bi-plus-circle me-2"></i>Añadir Bastidor</a>{% endif %}
+    {% if tipo_unidad == 'Artesas' %}<a href="{% url 'artesa-create' %}" class="btn btn-primary"><i class="bi bi-plus-circle me-2"></i>Añadir Artesa</a>{% endif %}
+    {% if tipo_unidad == 'Jaulas' %}<a href="{% url 'jaula-create' %}" class="btn btn-primary"><i class="bi bi-plus-circle me-2"></i>Añadir Jaula</a>{% endif %}
 </div>
 
 <div class="list-group">
     {% for unidad in unidades %}
-        <button type="button" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center"
-                data-bs-toggle="modal" data-bs-target="#detailModal" 
-                data-unidad-id="{{ unidad.pk }}" 
-                data-tipo-unidad="{{ tipo_unidad_slug }}">
-            <div class="text-start">
+        <div class="list-group-item d-flex justify-content-between align-items-center">
+            <button type="button" class="btn btn-link text-start text-decoration-none text-dark flex-grow-1 p-0 border-0"
+                    data-bs-toggle="modal" data-bs-target="#detailModal" 
+                    data-unidad-id="{{ unidad.pk }}" 
+                    data-tipo-unidad="{{ tipo_unidad_slug }}">
+                
                 <h5 class="mb-1">{{ unidad.codigo }}</h5>
-                <small class="text-muted">Capacidad: {{ unidad.capacidad_maxima_unidades }} unidades</small>
+                {% if unidad.lote_actual %}
+                    <small class="text-muted">
+                        Ocupación: <strong>{{ unidad.lote_actual.cantidad_total_peces }} / {{ unidad.capacidad_maxima_unidades }}</strong> | 
+                        Alimento: <strong>{{ unidad.lote_actual.cantidad_alimento_diario }} kg/día</strong>
+                    </small>
+                {% else %}
+                    <small class="text-muted">Capacidad: {{ unidad.capacidad_maxima_unidades }} unidades</small>
+                {% endif %}
+            </button>
+            
+            <div class="d-flex align-items-center">
+                {% if unidad.esta_disponible %}<span class="badge bg-secondary rounded-pill me-3">Disponible</span>{% else %}<span class="badge bg-success rounded-pill me-3">Ocupado</span>{% endif %}
+                
+                <div class="btn-group" role="group">
+                    {% if tipo_unidad == 'Bastidores' %}<a href="{% url 'bastidor-update' unidad.pk %}" class="btn btn-sm btn-outline-primary" title="Editar"><i class="bi bi-pencil-fill"></i></a><button type="button" class="btn btn-sm btn-outline-danger" title="Eliminar" data-bs-toggle="modal" data-bs-target="#confirmDeleteModal" data-form-url="{% url 'bastidor-delete' unidad.pk %}"><i class="bi bi-trash-fill"></i></button>{% elif tipo_unidad == 'Artesas' %}<a href="{% url 'artesa-update' unidad.pk %}" class="btn btn-sm btn-outline-primary" title="Editar"><i class="bi bi-pencil-fill"></i></a><button type="button" class="btn btn-sm btn-outline-danger" title="Eliminar" data-bs-toggle="modal" data-bs-target="#confirmDeleteModal" data-form-url="{% url 'artesa-delete' unidad.pk %}"><i class="bi bi-trash-fill"></i></button>{% elif tipo_unidad == 'Jaulas' %}<a href="{% url 'jaula-update' unidad.pk %}" class="btn btn-sm btn-outline-primary" title="Editar"><i class="bi bi-pencil-fill"></i></a><button type="button" class="btn btn-sm btn-outline-danger" title="Eliminar" data-bs-toggle="modal" data-bs-target="#confirmDeleteModal" data-form-url="{% url 'jaula-delete' unidad.pk %}"><i class="bi bi-trash-fill"></i></button>{% endif %}
+                </div>
             </div>
-            {% if unidad.esta_disponible %}<span class="badge bg-secondary rounded-pill">Disponible</span>{% else %}<span class="badge bg-success rounded-pill">Ocupado</span>{% endif %}
-        </button>
+        </div>
     {% empty %}
         <p class="text-center text-muted mt-4">No hay {{ tipo_unidad|lower }} registradas.</p>
     {% endfor %}
@@ -56,7 +73,46 @@
         </div>
     </div>
 </div>
+
+<div class="modal fade" id="moveLoteModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Mover Lote a Artesa</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="moveLoteBody">
+                <p>Buscando artesas disponibles...</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="createArtesaModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Añadir Nueva Artesa</h5>
+                <button type="button" class="btn-close" data-bs-target="#moveLoteModal" data-bs-toggle="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="createArtesaForm" autocomplete="off">
+                    <div class="mb-3">
+                        <label for="id_capacidad_maxima_unidades" class="form-label">Capacidad Máxima de Alevines</label>
+                        <input type="number" name="capacidad_maxima_unidades" class="form-control" id="id_capacidad_maxima_unidades" required min="1">
+                    </div>
+                    <div id="createArtesaErrors" class="text-danger small mt-2"></div>
+                    <div class="d-flex justify-content-end mt-3">
+                        <button type="button" class="btn btn-light me-2" data-bs-target="#moveLoteModal" data-bs-toggle="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">Crear Artesa</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
+
 
 {% block scripts %}
 <script>
@@ -66,14 +122,13 @@ document.addEventListener('DOMContentLoaded', function () {
 
     const detailModal = new bootstrap.Modal(detailModalEl);
     const addLoteModal = new bootstrap.Modal(document.getElementById('addLoteModal'));
+    const moveLoteModal = new bootstrap.Modal(document.getElementById('moveLoteModal'));
+    const createArtesaModal = new bootstrap.Modal(document.getElementById('createArtesaModal'));
     const csrfToken = document.querySelector('input[name=csrfmiddlewaretoken]').value;
 
     detailModalEl.addEventListener('show.bs.modal', function (event) {
         const button = event.relatedTarget;
-        if (!button || !button.hasAttribute('data-unidad-id')) {
-            console.error("El botón que abrió el modal no tiene los atributos necesarios.");
-            return;
-        }
+        if (!button || !button.hasAttribute('data-unidad-id')) return;
 
         const unidadId = button.getAttribute('data-unidad-id');
         const tipoUnidad = button.getAttribute('data-tipo-unidad');
@@ -81,57 +136,161 @@ document.addEventListener('DOMContentLoaded', function () {
         const modalBody = detailModalEl.querySelector('.modal-body');
 
         modalTitle.textContent = `Detalle de ${tipoUnidad.charAt(0).toUpperCase() + tipoUnidad.slice(1)}`;
-        modalBody.innerHTML = '<div class="text-center"><div class="spinner-border spinner-border-sm" role="status"></div> Cargando...</div>';
+        modalBody.innerHTML = '<div class="text-center p-3"><div class="spinner-border spinner-border-sm" role="status"></div> Cargando...</div>';
 
-        fetch(`/produccion/api/unidad/${tipoUnidad}/${unidadId}/`)
+        fetch(`/produccion/api/unidad/${tipoUnidad}/${unidadId}/`, { cache: 'reload' })
             .then(response => {
-                if (!response.ok) {
-                    throw new Error(`Error en la red: ${response.status} ${response.statusText}`);
-                }
+                if (!response.ok) throw new Error(`Error en la red: ${response.statusText}`);
                 return response.json();
             })
             .then(data => {
                 let content = '';
                 if (data.lote) {
+                    const dias = data.lote.dias_en_etapa;
+                    
+                    // --- LÓGICA DE BOTONES CORREGIDA ---
+                    let comidaDisabled = '';
+                    if (tipoUnidad === 'bastidor' && dias < 14) { // Solo para bastidores se deshabilita
+                        comidaDisabled = 'disabled';
+                    }
+                    const moverDisabled = dias < 25 ? 'disabled' : ''; // Solo para bastidores
+                    
+                    const comidaClass = data.lote.alimentacion_hoy ? 'btn-success' : 'btn-outline-secondary';
+                    const limpiezaClass = data.lote.limpieza_hoy ? 'btn-success' : 'btn-outline-secondary';
+                    const moverClass = (tipoUnidad === 'bastidor' && dias >= 25) ? 'btn-primary' : 'btn-outline-secondary';
+
                     content = `
-                        <h5>Lote Actual: ${data.lote.codigo}</h5>
-                        <ul class="list-group list-group-flush">
-                            <li class="list-group-item d-flex justify-content-between"><span>Cantidad Total:</span> <strong id="loteCantidad">${data.lote.cantidad}</strong></li>
-                            <li class="list-group-item d-flex justify-content-between"><span>Capacidad Máxima:</span> <strong>${data.unidad.capacidad}</strong></li>
-                            <li class="list-group-item d-flex justify-content-between"><span>Alimento Diario:</span> <strong>${data.lote.alimento_diario} kg</strong></li>
-                        </ul>
-                        <hr>
-                        <h6>Registrar Bajas</h6>
-                        <form id="mortalidadForm" data-lote-id="${data.lote.id}" autocomplete="off">
-                            <div class="input-group">
-                                <input type="number" name="cantidad" class="form-control" placeholder="N° de muertos" required min="1">
-                                <button type="submit" class="btn btn-danger">Registrar</button>
-                            </div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">Lote Actual: ${data.lote.codigo}</h5>
+                            <span class="badge bg-info-subtle text-info-emphasis rounded-pill">Días en etapa: ${dias}</span>
+                        </div>
+                        <hr class="my-3">
+                        <ul class="list-group list-group-flush mb-3">
+                            <li class="list-group-item d-flex justify-content-between align-items-center ps-0"><span><i class="bi bi-box-seam me-2 text-muted"></i>Cantidad Total</span><strong id="loteCantidad">${data.lote.cantidad}</strong></li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center ps-0"><span><i class="bi bi-bounding-box-circles me-2 text-muted"></i>Capacidad Máxima</span><strong>${data.unidad.capacidad}</strong></li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center ps-0"><span><i class="bi bi-egg-fried me-2 text-muted"></i>Alimento Diario</span><strong>${data.lote.alimento_diario} kg</strong></li>
+                        </ul>`;
+                    
+                    // --- NUEVA LÓGICA PARA EL TALLAJE DE ARTESAS ---
+                    if (tipoUnidad === 'artesa') {
+                        content += '<hr class="my-3"><h6>Tallaje de Alevines</h6>';
+                        if (data.unidad.talla_min_cm && data.unidad.talla_max_cm) {
+                            content += `<p>Rango de talla actual: <strong>${data.unidad.talla_min_cm} - ${data.unidad.talla_max_cm} cm</strong></p>`;
+                        } else if (dias >= 7) {
+                            content += `
+                                <div id="tallaWrapper">
+                                    <button class="btn btn-info w-100" id="showTallaFormBtn"><i class="bi bi-rulers me-2"></i>Realizar Medición</button>
+                                </div>
+                                <form id="tallaForm" class="d-none" data-artesa-id="${data.unidad.id}">
+                                    <div class="row gx-2 align-items-center">
+                                        <div class="col"><input type="number" step="0.1" name="talla_min_cm" class="form-control" placeholder="Desde (cm)" required></div>
+                                        <div class="col"><input type="number" step="0.1" name="talla_max_cm" class="form-control" placeholder="Hasta (cm)" required></div>
+                                        <div class="col-auto"><button type="submit" class="btn btn-primary">Guardar</button></div>
+                                    </div>
+                                    <div id="tallaErrors" class="text-danger small mt-1"></div>
+                                </form>
+                            `;
+                        } else {
+                            content += `<p class="text-muted small">La medición estará disponible a los 7 días (faltan ${7 - dias} día/s).</p>`;
+                        }
+                    }
+
+                    content += `<hr class="my-3">
+                        <form id="mortalidadForm" data-lote-id="${data.lote.id}" autocomplete="off" class="mb-3">
+                            <label class="form-label small">Registrar Bajas</label>
+                            <div class="input-group"><span class="input-group-text"><i class="bi bi-heartbreak-fill"></i></span><input type="number" name="cantidad" class="form-control" placeholder="N° de muertos" required min="1"><button type="submit" class="btn btn-danger">Registrar</button></div>
                             <div id="mortalidadErrors" class="small mt-1"></div>
                         </form>
+                        <div class="mt-4 text-center">
+                            <h6 class="text-muted small text-uppercase">Acciones Diarias</h6>
+                            <div class="d-flex justify-content-center gap-3 mt-3">
+                                <div><button class="btn ${comidaClass} rounded-circle d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;" data-tarea="alimentacion" data-lote-id="${data.lote.id}" ${comidaDisabled} title="Alimentar"><i class="bi bi-tropical-fish fs-5"></i></button><div class="small mt-1">Alimentar</div></div>
+                                <div><button class="btn ${limpiezaClass} rounded-circle d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;" data-tarea="limpieza" data-lote-id="${data.lote.id}" title="Limpiar"><i class="bi bi-snow fs-5"></i></button><div class="small mt-1">Limpiar</div></div>
+                                {% if tipo_unidad == 'bastidor' %}
+                                <div><button class="btn ${moverClass} rounded-circle d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;" id="openMoveLoteBtn" data-lote-id="${data.lote.id}" ${moverDisabled} title="Mover Lote (habilitado a los 25 días)"><i class="bi bi-arrows-move fs-5"></i></button><div class="small mt-1">Mover</div></div>
+                                {% endif %}
+                            </div>
+                        </div>
                     `;
                 } else {
                     content = `<div class="text-center p-3"><p class="lead">Esta unidad está disponible.</p>`;
                     if (tipoUnidad === 'bastidor') {
-                        content += `
-                            <button class="btn btn-success btn-lg" id="openAddLoteBtn" 
-                                    data-bastidor-id="${data.unidad.id}" data-bastidor-codigo="${data.unidad.codigo}" data-bastidor-capacidad="${data.unidad.capacidad}">
-                                <i class="bi bi-plus-circle me-2"></i>Añadir Ovas
-                            </button>
-                        `;
+                        content += `<button class="btn btn-success btn-lg" id="openAddLoteBtn" data-bastidor-id="${data.unidad.id}" data-bastidor-codigo="${data.unidad.codigo}" data-bastidor-capacidad="${data.unidad.capacidad}"><i class="bi bi-plus-circle me-2"></i>Añadir Ovas</button>`;
                     }
                     content += '</div>';
                 }
                 modalBody.innerHTML = content;
             })
             .catch(error => {
-                modalBody.innerHTML = `<p class="text-danger">Error al cargar los detalles. Revisa la consola (F12) para más información.</p>`;
+                modalBody.innerHTML = `<p class="text-danger">Error al cargar los detalles. Revisa la consola (F12).</p>`;
                 console.error('Error en fetch de detalles:', error);
             });
     });
 
+    function fetchAndDisplayArtesas(loteId) {
+        const moveBody = document.getElementById('moveLoteBody');
+        moveBody.innerHTML = '<p>Buscando artesas...</p>';
+        fetch('/produccion/api/artesas_disponibles/')
+            .then(response => response.json())
+            .then(artesas => {
+                if (artesas.length > 0) {
+                    let listHTML = '<p>Selecciona una artesa de destino:</p><div class="list-group">';
+                    artesas.forEach(artesa => {
+                        const tallaInfo = artesa.talla_info || '(Sin clasificar)';
+                        listHTML += `<button type="button" class="list-group-item list-group-item-action move-lote-target" data-artesa-id="${artesa.id}" data-lote-id="${loteId}"><strong>${artesa.codigo}</strong> ${tallaInfo} - Capacidad: ${artesa.capacidad_maxima_unidades}</button>`;
+                    });
+                    listHTML += '</div>';
+                    moveBody.innerHTML = listHTML;
+                } else {
+                    moveBody.innerHTML = '<div class="alert alert-warning">No hay artesas disponibles. <button type="button" id="openCreateArtesaBtn" class="btn btn-sm btn-success ms-2">Añadir una nueva</button></div>';
+                }
+            });
+    }
+
     document.body.addEventListener('click', function(event) {
-        if (event.target && event.target.id === 'openAddLoteBtn') {
+        const tareaButton = event.target.closest('[data-tarea]');
+        if (tareaButton) {
+            const loteId = tareaButton.dataset.loteId;
+            const tarea = tareaButton.dataset.tarea;
+            fetch(`/produccion/api/lote/${loteId}/marcar_tarea/${tarea}/`, { method: 'POST', headers: {'X-CSRFToken': csrfToken} })
+            .then(response => response.json())
+            .then(data => { if (data.success) { tareaButton.classList.remove('btn-outline-secondary'); tareaButton.classList.add('btn-success'); tareaButton.blur(); }});
+        }
+        
+        if (event.target.id === 'openMoveLoteBtn') {
+            const loteId = event.target.dataset.loteId;
+            detailModal.hide();
+            moveLoteModal.show();
+            fetchAndDisplayArtesas(loteId);
+        }
+
+        if (event.target.id === 'showTallaFormBtn') {
+            document.getElementById('tallaWrapper').classList.add('d-none');
+            document.getElementById('tallaForm').classList.remove('d-none');
+        }
+
+        if (event.target.id === 'openCreateArtesaBtn') {
+            document.getElementById('createArtesaErrors').innerHTML = '';
+            document.getElementById('createArtesaForm').reset();
+            moveLoteModal.hide();
+            createArtesaModal.show();
+        }
+        
+        const moveTargetButton = event.target.closest('.move-lote-target');
+        if (moveTargetButton) {
+            const loteId = moveTargetButton.dataset.loteId;
+            const artesaId = moveTargetButton.dataset.artesaId;
+            if (confirm('¿Estás seguro de que quieres mover este lote a la artesa seleccionada?')) {
+                fetch(`/produccion/api/lote/${loteId}/mover_a_artesa/${artesaId}/`, { method: 'POST', headers: {'X-CSRFToken': csrfToken} })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) { alert(data.message); window.location.reload(); } 
+                    else { alert('Error: ' + data.error); }
+                });
+            }
+        }
+
+        if (event.target.id === 'openAddLoteBtn') {
             const button = event.target;
             document.getElementById('addLoteBastidorCodigo').textContent = button.getAttribute('data-bastidor-codigo');
             document.getElementById('addLoteCapacidad').textContent = button.getAttribute('data-bastidor-capacidad');
@@ -143,51 +302,71 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
-    document.getElementById('addLoteForm').addEventListener('submit', function (event) {
+    document.getElementById('createArtesaForm').addEventListener('submit', function(event) {
         event.preventDefault();
-        const bastidorId = document.getElementById('addLoteBastidorId').value;
         const formData = new FormData(this);
-        const errorDiv = document.getElementById('addLoteErrors');
-        
-        fetch(`/produccion/api/lote/ova/crear/${bastidorId}/`, {
-            method: 'POST', body: formData, headers: {'X-CSRFToken': csrfToken}
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                window.location.reload();
-            } else {
-                errorDiv.textContent = data.error || 'Ocurrió un error.';
-            }
-        })
-        .catch(error => { errorDiv.textContent = 'Error de conexión.'; console.error('Error en fetch de crear lote:', error); });
+        const errorDiv = document.getElementById('createArtesaErrors');
+        const loteId = document.querySelector('#openMoveLoteBtn, .move-lote-target')?.dataset.loteId;
+        fetch('{% url "artesa-create" %}', { method: 'POST', body: formData, headers: {'X-CSRFToken': csrfToken} })
+            .then(response => {
+                if (response.ok) {
+                    createArtesaModal.hide();
+                    moveLoteModal.show();
+                    fetchAndDisplayArtesas(loteId);
+                } else { errorDiv.textContent = 'Error al crear la artesa.'; }
+            });
     });
-
+    
     document.body.addEventListener('submit', function(event) {
-        if (event.target && event.target.id === 'mortalidadForm') {
+        if (event.target.id === 'tallaForm') {
+            event.preventDefault();
+            const form = event.target;
+            const artesaId = form.dataset.artesaId;
+            const errorDiv = form.querySelector('#tallaErrors');
+            const formData = new FormData(form);
+            fetch(`/produccion/api/artesa/${artesaId}/definir_talla/`, { method: 'POST', body: formData, headers: {'X-CSRFToken': csrfToken} })
+            .then(response => response.json())
+            .then(data => {
+                if(data.success) {
+                    form.parentElement.innerHTML = '<p class="text-success fw-bold"><i class="bi bi-check-circle-fill me-2"></i>Talla guardada con éxito.</p>';
+                } else {
+                    errorDiv.textContent = data.error || 'Error al guardar.';
+                }
+            });
+        }
+        
+        if (event.target.id === 'mortalidadForm') {
             event.preventDefault();
             const form = event.target;
             const loteId = form.getAttribute('data-lote-id');
             const errorDiv = form.querySelector('#mortalidadErrors');
             const cantidadSpan = document.getElementById('loteCantidad');
             const formData = new FormData(form);
-
-            fetch(`/produccion/api/lote/${lote_id}/registrar_mortalidad/`, {
-                method: 'POST', body: formData, headers: {'X-CSRFToken': csrfToken}
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    cantidadSpan.textContent = data.nueva_cantidad;
-                    form.reset();
-                    errorDiv.innerHTML = '<span class="text-success small">Bajas registradas.</span>';
-                } else {
-                    errorDiv.innerHTML = `<span class="text-danger small">${data.error || 'Ocurrió un error.'}</span>`;
-                }
-            })
-            .catch(error => { errorDiv.textContent = 'Error de conexión.'; console.error('Error en fetch de mortalidad:', error); });
+            fetch(`/produccion/api/lote/${loteId}/registrar_mortalidad/`, { method: 'POST', body: formData, headers: {'X-CSRFToken': csrfToken} })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        cantidadSpan.textContent = data.nueva_cantidad;
+                        form.reset();
+                        errorDiv.innerHTML = '<span class="text-success small">Bajas registradas.</span>';
+                    } else {
+                        errorDiv.innerHTML = `<span class="text-danger small">${data.error || 'Ocurrió un error.'}</span>`;
+                    }
+                })
+                .catch(error => { errorDiv.textContent = 'Error de conexión.'; });
         }
+    });
+
+    document.getElementById('addLoteForm').addEventListener('submit', function (event) {
+        event.preventDefault();
+        const bastidorId = document.getElementById('addLoteBastidorId').value;
+        const formData = new FormData(this);
+        const errorDiv = document.getElementById('addLoteErrors');
+        fetch(`/produccion/api/lote/ova/crear/${bastidorId}/`, { method: 'POST', body: formData, headers: {'X-CSRFToken': csrfToken} })
+            .then(response => response.json())
+            .then(data => { if (data.success) { window.location.reload(); } else { errorDiv.textContent = data.error || 'Ocurrió un error.'; }})
+            .catch(error => { errorDiv.textContent = 'Error de conexión.'; });
     });
 });
 </script>
-{% endblock %}
+{% endblock scripts %}

@@ -1,7 +1,6 @@
 from django import forms
-from .models import Bastidor, Artesa, Jaula, Lote, RegistroMortalidad 
+from .models import Bastidor, Artesa, Jaula, Lote, RegistroMortalidad
 
-# FORMULARIOS DE UNIDADES ACTUALIZADOS
 class BastidorForm(forms.ModelForm):
     class Meta:
         model = Bastidor
@@ -12,7 +11,7 @@ class ArtesaForm(forms.ModelForm):
     class Meta:
         model = Artesa
         fields = ['capacidad_maxima_unidades']
-        labels = {'capacidad_maxima_unidades': 'Capacidad Máxima de Alevines (unidades)'}
+        labels = { 'capacidad_maxima_unidades': 'Capacidad Máxima de Alevines (unidades)' }
 
 class JaulaForm(forms.ModelForm):
     class Meta:
@@ -20,7 +19,6 @@ class JaulaForm(forms.ModelForm):
         fields = ['capacidad_maxima_unidades']
         labels = {'capacidad_maxima_unidades': 'Capacidad Máxima de Peces (unidades)'}
 
-# NUEVO FORMULARIO PARA CREAR LOTES DE OVAS
 class LoteOvaCreateForm(forms.ModelForm):
     class Meta:
         model = Lote
@@ -31,3 +29,9 @@ class RegistroMortalidadForm(forms.ModelForm):
     class Meta:
         model = RegistroMortalidad
         fields = ['cantidad']
+
+# --- FORMULARIO CORREGIDO ---
+class ArtesaTallaForm(forms.ModelForm):
+    class Meta:
+        model = Lote  # <-- Change Artesa to Lote
+        fields = ['talla_min_cm', 'talla_max_cm']

@@ -1,0 +1,213 @@
+{% extends "base.html" %}
+
+{% block content %}
+{% csrf_token %}
+
+<div class="d-flex justify-content-between align-items-center mb-4 border-bottom pb-3">
+    <h1 class="h2">Gestión de Jaulas (Etapa: Engorde)</h1>
+    <a href="{% url 'jaula-create' %}" class="btn btn-primary"><i class="bi bi-plus-circle me-2"></i>Añadir Jaula</a>
+</div>
+
+<div class="list-group">
+    {% for unidad in unidades %}
+        <div class="list-group-item d-flex justify-content-between align-items-center">
+             <button type="button" class="btn btn-link text-start text-decoration-none text-dark flex-grow-1 p-0 border-0"
+                    data-bs-toggle="modal" data-bs-target="#detailModal" 
+                    data-unidad-id="{{ unidad.pk }}" 
+                    data-tipo-unidad="jaula">
+                
+                <h5 class="mb-1">{{ unidad.codigo }}</h5>
+                {% if unidad.lote_actual %}
+                    <small class="text-muted">
+                        Ocupación: <strong>{{ unidad.lote_actual.cantidad_total_peces }} / {{ unidad.capacidad_maxima_unidades }}</strong> | 
+                        Talla: <strong>{% if unidad.lote_actual.talla_max_cm %}> {{ unidad.lote_actual.talla_max_cm|floatformat:1 }} cm{% else %}Sin medir{% endif %}</strong>
+                    </small>
+                {% else %}
+                    <small class="text-muted">Capacidad: {{ unidad.capacidad_maxima_unidades }} unidades</small>
+                {% endif %}
+            </button>
+            
+            <div class="d-flex align-items-center">
+                {% if unidad.esta_disponible %}<span class="badge bg-secondary rounded-pill me-3">Disponible</span>{% else %}<span class="badge bg-success rounded-pill me-3">Ocupado</span>{% endif %}
+                <div class="btn-group" role="group">
+                    <a href="{% url 'jaula-update' unidad.pk %}" class="btn btn-sm btn-outline-primary" title="Editar"><i class="bi bi-pencil-fill"></i></a>
+                    <button type="button" class="btn btn-sm btn-outline-danger" title="Eliminar"
+                            data-bs-toggle="modal" data-bs-target="#confirmDeleteModal"
+                            data-form-url="{% url 'jaula-delete' unidad.pk %}">
+                        <i class="bi bi-trash-fill"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    {% empty %}
+        <p class="text-center text-muted mt-4">No hay jaulas registradas.</p>
+    {% endfor %}
+</div>
+
+<div class="modal fade" id="detailModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header"><h5 class="modal-title" id="detailModalTitle">Detalle</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <div class="modal-body" id="detailModalBody"></div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="reallocateJaulaModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header"><h5 class="modal-title">Reasignar Peces de Engorde</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <div class="modal-body">
+                <form id="reallocateJaulaForm" autocomplete="off">
+                    <div id="reallocateJaulaList" class="mb-3">Cargando jaulas...</div>
+                    <div class="mb-3">
+                        <label for="id_cantidad_reasignar_jaula" class="form-label">Cantidad a Mover</label>
+                        <input type="number" name="cantidad" class="form-control" id="id_cantidad_reasignar_jaula" required min="1">
+                    </div>
+                    <div id="reallocateJaulaErrors" class="text-danger small mt-2"></div>
+                    <div class="d-flex justify-content-end mt-3">
+                        <button type="button" class="btn btn-light me-2" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">Reasignar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const detailModalEl = document.getElementById('detailModal');
+    if (!detailModalEl) return;
+
+    const detailModal = new bootstrap.Modal(detailModalEl);
+    const reallocateModal = new bootstrap.Modal(document.getElementById('reallocateJaulaModal'));
+    const csrfToken = document.querySelector('input[name=csrfmiddlewaretoken]').value;
+
+    detailModalEl.addEventListener('show.bs.modal', function (event) {
+        const button = event.relatedTarget;
+        if (!button || !button.hasAttribute('data-unidad-id')) return;
+        const unidadId = button.getAttribute('data-unidad-id');
+        const tipoUnidad = 'jaula';
+        const modalTitle = detailModalEl.querySelector('.modal-title');
+        const modalBody = detailModalEl.querySelector('.modal-body');
+
+        modalTitle.textContent = `Detalle de Jaula`;
+        modalBody.innerHTML = '<div class="text-center p-3"><div class="spinner-border spinner-border-sm" role="status"></div> Cargando...</div>';
+
+        fetch(`/produccion/api/unidad/${tipoUnidad}/${unidadId}/`, { cache: 'reload' })
+            .then(response => { if (!response.ok) throw new Error(`Error: ${response.statusText}`); return response.json(); })
+            .then(data => {
+                let content = '';
+                if (data.lote) {
+                    const dias = data.lote.dias_en_etapa;
+                    const comidaClass = data.lote.alimentacion_hoy ? 'btn-success' : 'btn-outline-secondary';
+                    const limpiezaClass = data.lote.limpieza_hoy ? 'btn-success' : 'btn-outline-secondary';
+
+                    content = `<div class="d-flex justify-content-between align-items-center"><h5 class="mb-0">Lote: ${data.lote.codigo}</h5><span class="badge bg-info-subtle text-info-emphasis rounded-pill">Días: ${dias}</span></div><hr class="my-3">`;
+                    
+                    if (data.lote.talla_max_cm && data.lote.talla_max_cm > 25) {
+                        content += `<div class="alert alert-success text-center fw-bold"><i class="bi bi-check-circle-fill me-2"></i>¡Lote listo para la venta!</div>`;
+                    }
+
+                    content += `<ul class="list-group list-group-flush mb-3"><li class="list-group-item d-flex justify-content-between ps-0"><span><i class="bi bi-box-seam me-2 text-muted"></i>Cantidad Total</span><strong id="loteCantidad">${data.lote.cantidad}</strong></li><li class="list-group-item d-flex justify-content-between ps-0"><span><i class="bi bi-bounding-box-circles me-2 text-muted"></i>Capacidad Máxima</span><strong>${data.unidad.capacidad}</strong></li></ul>`;
+                    content += `<hr class="my-3"><form id="mortalidadForm" data-lote-id="${data.lote.id}" autocomplete="off" class="mb-3"><label class="form-label small">Registrar Bajas</label><div class="input-group"><span class="input-group-text"><i class="bi bi-heartbreak-fill"></i></span><input type="number" name="cantidad" class="form-control" placeholder="N° de muertos" required min="1"><button type="submit" class="btn btn-danger">Registrar</button></div><div id="mortalidadErrors" class="small mt-1"></div></form>`;
+                    
+                    content += `<div class="mt-4 text-center"><h6 class="text-muted small text-uppercase">Acciones</h6><div class="d-flex justify-content-center gap-3 mt-3">
+                        <div><button class="btn ${comidaClass} rounded-circle d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;" data-tarea="alimentacion" data-lote-id="${data.lote.id}" title="Alimentar"><i class="bi bi-tropical-fish fs-5"></i></button><div class="small mt-1">Alimentar</div></div>
+                        <div><button class="btn ${limpiezaClass} rounded-circle d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;" data-tarea="limpieza" data-lote-id="${data.lote.id}" title="Limpiar"><i class="bi bi-snow fs-5"></i></button><div class="small mt-1">Limpiar</div></div>
+                        <div><button class="btn btn-warning rounded-circle d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;" id="openReallocateJaulaBtn" data-lote-id="${data.lote.id}" title="Reasignar Peces"><i class="bi bi-distribute-vertical fs-5"></i></button><div class="small mt-1">Reasignar</div></div>
+                    </div></div>`;
+
+                } else {
+                    content = `<div class="text-center p-3"><p class="lead">Esta unidad está disponible.</p></div>`;
+                }
+                modalBody.innerHTML = content;
+            })
+            .catch(error => { modalBody.innerHTML = `<p class="text-danger">Error al cargar los detalles.</p>`; console.error('Error:', error); });
+    });
+
+    document.body.addEventListener('click', function(event) {
+        const tareaButton = event.target.closest('[data-tarea]');
+        if (tareaButton) {
+            const loteId = tareaButton.dataset.loteId;
+            const tarea = tareaButton.dataset.tarea;
+            fetch(`/produccion/api/lote/${loteId}/marcar_tarea/${tarea}/`, { method: 'POST', headers: {'X-CSRFToken': csrfToken} })
+            .then(response => response.json())
+            .then(data => { if (data.success) { tareaButton.classList.remove('btn-outline-secondary'); tareaButton.classList.add('btn-success'); tareaButton.blur(); }});
+        }
+
+        if (event.target.id === 'openReallocateJaulaBtn') {
+            const loteId = event.target.dataset.loteId;
+            const reallocateList = document.getElementById('reallocateJaulaList');
+            reallocateList.innerHTML = '<p>Buscando otras jaulas disponibles...</p>';
+            detailModal.hide();
+            reallocateModal.show();
+            document.getElementById('reallocateJaulaForm').dataset.loteId = loteId;
+
+            fetch(`/produccion/api/jaulas_disponibles/${loteId}/`)
+                .then(response => response.json())
+                .then(jaulas => {
+                    if (jaulas.length > 0) {
+                        let selectHTML = '<label class="form-label">Jaula de Destino</label><select class="form-select" name="jaula_destino" required>';
+                        jaulas.forEach(jaula => {
+                            selectHTML += `<option value="${jaula.id}">${jaula.codigo} - Capacidad: ${jaula.capacidad_maxima_unidades}</option>`;
+                        });
+                        selectHTML += '</select>';
+                        reallocateList.innerHTML = selectHTML;
+                    } else {
+                        reallocateList.innerHTML = '<div class="alert alert-warning">No hay otras jaulas disponibles para reasignar.</div>';
+                    }
+                });
+        }
+    });
+
+    document.getElementById('reallocateJaulaForm').addEventListener('submit', function(event) {
+        event.preventDefault();
+        const loteId = this.dataset.loteId;
+        const formData = new FormData(this);
+        const errorDiv = document.getElementById('reallocateJaulaErrors');
+        errorDiv.textContent = '';
+
+        fetch(`/produccion/api/lote/${loteId}/reasignar_engorde/`, {
+            method: 'POST', body: formData, headers: {'X-CSRFToken': csrfToken}
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.message);
+                window.location.reload();
+            } else {
+                errorDiv.textContent = data.error || 'Ocurrió un error.';
+            }
+        });
+    });
+
+    document.body.addEventListener('submit', function(event) {
+        if (event.target.id === 'mortalidadForm') {
+            event.preventDefault();
+            const form = event.target;
+            const loteId = form.getAttribute('data-lote-id');
+            const errorDiv = form.querySelector('#mortalidadErrors');
+            const cantidadSpan = document.getElementById('loteCantidad');
+            const formData = new FormData(form);
+            fetch(`/produccion/api/lote/${loteId}/registrar_mortalidad/`, { method: 'POST', body: formData, headers: {'X-CSRFToken': csrfToken} })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        cantidadSpan.textContent = data.nueva_cantidad;
+                        form.reset();
+                        errorDiv.innerHTML = '<span class="text-success small">Bajas registradas.</span>';
+                    } else {
+                        errorDiv.innerHTML = `<span class="text-danger small">${data.error || 'Ocurrió un error.'}</span>`;
+                    }
+                })
+                .catch(error => { errorDiv.textContent = 'Error de conexión.'; });
+        }
+    });
+});
+</script>
+{% endblock scripts %}

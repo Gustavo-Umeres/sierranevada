@@ -24,13 +24,27 @@ urlpatterns = [
     path('engorde/nuevo/', views.JaulaCreateView.as_view(), name='jaula-create'),
     path('jaula/<int:pk>/editar/', views.JaulaUpdateView.as_view(), name='jaula-update'),
     path('jaula/<int:pk>/eliminar/', views.JaulaDeleteView.as_view(), name='jaula-delete'),
-
-    # --- LÍNEAS ELIMINADAS ---
-    # path('lote/<int:lote_id>/marcar/<str:tarea>/', views.marcar_tarea, name='marcar-tarea'),
-    # path('lote/<int:lote_id>/registrar-mortalidad/', views.registrar_mortalidad, name='registrar-mortalidad'),
     
-    # URLs de la API para los Pop-ups
+    # --- URLs de la API para los Pop-ups ---
     path('api/unidad/<str:tipo_unidad>/<int:pk>/', views.unidad_detail_json, name='unidad-detail-json'),
+    
+    # Lógica de Ovas
     path('api/lote/ova/crear/<int:bastidor_id>/', views.lote_ova_create_view, name='lote-ova-create'),
+    path('api/lote/<int:lote_id>/mover_a_artesa/<int:artesa_id>/', views.mover_lote_a_artesa, name='mover-lote-a-artesa'),
+
+    # Lógica de Alevines
+    path('api/lote/<int:pk>/definir_talla/', views.artesa_definir_talla_json, name='lote-definir-talla'), # <-- ESTA ES LA LÍNEA CORREGIDA
+    path('api/lote/<int:lote_origen_id>/reasignar/', views.reasignar_alevines_json, name='reasignar-alevines'),
+    path('api/lote/<int:lote_id>/mover_a_jaula/<int:jaula_id>/', views.mover_lote_a_jaula, name='mover-lote-a-jaula'),
+    path('api/artesas_disponibles/', views.listar_artesas_disponibles_json, name='listar-artesas-disponibles'),
+    path('api/artesas_disponibles/<int:lote_id_origen>/', views.listar_artesas_disponibles_json, name='listar-otras-artesas-disponibles'),
+    
+    # Lógica de Engorde
+    path('api/jaulas_disponibles/', views.listar_jaulas_disponibles_json, name='listar-jaulas-disponibles'),
+    path('api/jaulas_disponibles/<int:lote_id_origen>/', views.listar_otras_jaulas_disponibles_json, name='listar-otras-jaulas-disponibles'),
+    path('api/lote/<int:lote_origen_id>/reasignar_engorde/', views.reasignar_engorde_json, name='reasignar-engorde'),
+
+    # Acciones comunes
+    path('api/lote/<int:lote_id>/marcar_tarea/<str:tarea>/', views.marcar_tarea_json, name='marcar-tarea-json'),
     path('api/lote/<int:lote_id>/registrar_mortalidad/', views.registrar_mortalidad_json, name='registrar-mortalidad-json'),
 ]
