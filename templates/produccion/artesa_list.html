@@ -13,22 +13,28 @@
         <div class="list-group-item d-flex justify-content-between align-items-center">
             <button type="button" class="btn btn-link text-start text-decoration-none text-dark flex-grow-1 p-0 border-0"
                     data-bs-toggle="modal" data-bs-target="#detailModal" 
-                    data-unidad-id="{{ unidad.pk }}" 
-                    data-tipo-unidad="artesa">
-                
-                <h5 class="mb-1">{{ unidad }}</h5>
-                {% if unidad.lote_actual %}
-                    <small class="text-muted">
-                        Ocupación: <strong>{{ unidad.lote_actual.cantidad_total_peces }} / {{ unidad.capacidad_maxima_unidades }}</strong>
-                    </small>
-                {% else %}
-                    <small class="text-muted">Capacidad: {{ unidad.capacidad_maxima_unidades }} unidades</small>
-                {% endif %}
+                    data-unidad-id="{{ unidad.pk }}">
+                <div class="d-flex w-100">
+                    <div class="flex-grow-1">
+                        <h5 class="mb-1">{{ unidad.codigo }}</h5>
+                        {% if not unidad.lote_actual %}
+                            <small class="text-muted">Capacidad: {{ unidad.capacidad_maxima_unidades }} alevines</small>
+                        {% endif %}
+                    </div>
+                    <div class="text-end">
+                        {% if unidad.lote_actual %}
+                            <h5 class="mb-1">{{ unidad.lote_actual.codigo_lote }}</h5>
+                            <small class="text-muted">
+                                <strong>{{ unidad.lote_actual.cantidad_total_peces }} / {{ unidad.capacidad_maxima_unidades }}</strong> alevines | 
+                                Talla: <strong>{% if unidad.lote_actual.talla_min_cm %}{{ unidad.lote_actual.talla_min_cm|floatformat:1 }}-{{ unidad.lote_actual.talla_max_cm|floatformat:1 }} cm{% else %}Sin medir{% endif %}</strong>
+                            </small>
+                        {% endif %}
+                    </div>
+                </div>
             </button>
-            
             <div class="d-flex align-items-center">
-                {% if unidad.esta_disponible %}<span class="badge bg-secondary rounded-pill me-3">Disponible</span>{% else %}<span class="badge bg-success rounded-pill me-3">Ocupado</span>{% endif %}
-                <div class="btn-group" role="group">
+                {% if unidad.esta_disponible %}<span class="badge bg-secondary rounded-pill ms-3">Disponible</span>{% else %}<span class="badge bg-success rounded-pill ms-3">Ocupado</span>{% endif %}
+                <div class="btn-group ms-2" role="group">
                     <a href="{% url 'artesa-update' unidad.pk %}" class="btn btn-sm btn-outline-primary" title="Editar"><i class="bi bi-pencil-fill"></i></a>
                     <button type="button" class="btn btn-sm btn-outline-danger" title="Eliminar"
                             data-bs-toggle="modal" data-bs-target="#confirmDeleteModal"
@@ -45,9 +51,11 @@
 
 <div class="modal fade" id="detailModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-header"><h5 class="modal-title" id="detailModalTitle">Detalle</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body" id="detailModalBody"></div></div></div></div>
 
-<div class="modal fade" id="moveLoteToJaulaModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-header"><h5 class="modal-title">Mover Lote a Jaula</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body" id="moveLoteToJaulaBody"></div></div></div></div>
+<div class="modal fade" id="moveLoteToJaulaModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-header"><h5 class="modal-title">Mover Lote a Jaula</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><form id="moveLoteToJaulaForm" autocomplete="off"><div id="jaulaListContainer" class="mb-3">Cargando jaulas...</div><div id="moveQuantityContainer" class="mb-3 d-none"><label for="id_cantidad_a_mover" class="form-label">Cantidad a Mover</label><input type="number" name="cantidad" class="form-control" id="id_cantidad_a_mover" required min="1"><div class="form-text">Puedes mover una parte o el total del lote.</div></div><div id="moveLoteToJaulaErrors" class="text-danger small mt-2"></div><div class="d-flex justify-content-end mt-3"><button type="submit" class="btn btn-primary d-none" id="confirmMoveBtn">Confirmar Movimiento</button></div></form></div></div></div></div>
 
 <div class="modal fade" id="reallocateModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-header"><h5 class="modal-title">Reasignar Alevines</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><form id="reallocateForm" autocomplete="off"><div id="reallocateList" class="mb-3">Cargando artesas...</div><div class="mb-3"><label for="id_cantidad_reasignar" class="form-label">Cantidad a Mover</label><input type="number" name="cantidad" class="form-control" id="id_cantidad_reasignar" required min="1"></div><div id="reallocateErrors" class="text-danger small mt-2"></div><div class="d-flex justify-content-end mt-3"><button type="button" class="btn btn-light me-2" data-bs-dismiss="modal">Cancelar</button><button type="submit" class="btn btn-primary">Reasignar</button></div></form></div></div></div></div>
+
+<div class="modal fade" id="createJaulaModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-header"><h5 class="modal-title">Añadir Nueva Jaula</h5><button type="button" class="btn-close" data-bs-target="#moveLoteToJaulaModal" data-bs-toggle="modal"></button></div><div class="modal-body"><form id="createJaulaForm" autocomplete="off"><div class="mb-3"><label for="id_capacidad_maxima_unidades_jaula" class="form-label">Capacidad Máxima de Peces</label><input type="number" name="capacidad_maxima_unidades" class="form-control" id="id_capacidad_maxima_unidades_jaula" required min="1"></div><div id="createJaulaErrors" class="text-danger small mt-2"></div><div class="d-flex justify-content-end mt-3"><button type="button" class="btn btn-light me-2" data-bs-target="#moveLoteToJaulaModal" data-bs-toggle="modal">Cancelar</button><button type="submit" class="btn btn-primary">Crear Jaula</button></div></form></div></div></div></div>
 {% endblock %}
 
 
@@ -59,38 +67,44 @@ document.addEventListener('DOMContentLoaded', function () {
     const detailModal = new bootstrap.Modal(detailModalEl);
     const moveLoteToJaulaModal = new bootstrap.Modal(document.getElementById('moveLoteToJaulaModal'));
     const reallocateModal = new bootstrap.Modal(document.getElementById('reallocateModal'));
+    const createJaulaModal = new bootstrap.Modal(document.getElementById('createJaulaModal'));
     const csrfToken = document.querySelector('input[name=csrfmiddlewaretoken]').value;
 
-    detailModalEl.addEventListener('show.bs.modal', function (event) {
-        const button = event.relatedTarget;
-        if (!button || !button.hasAttribute('data-unidad-id')) return;
-        const unidadId = button.getAttribute('data-unidad-id');
-        const tipoUnidad = 'artesa';
-        const modalTitle = detailModalEl.querySelector('.modal-title');
+    function refreshModalContent(unidadId) {
         const modalBody = detailModalEl.querySelector('.modal-body');
+        const modalTitle = detailModalEl.querySelector('.modal-title');
         modalTitle.textContent = `Detalle de Artesa`;
         modalBody.innerHTML = '<div class="text-center p-3"><div class="spinner-border spinner-border-sm" role="status"></div> Cargando...</div>';
-        fetch(`/produccion/api/unidad/${tipoUnidad}/${unidadId}/`, { cache: 'reload' })
-            .then(response => { if (!response.ok) throw new Error(`Error: ${response.statusText}`); return response.json(); })
+        fetch(`/produccion/api/unidad/artesa/${unidadId}/`, { cache: 'reload' })
+            .then(response => response.json())
             .then(data => {
                 let content = '';
                 if (data.lote) {
                     const dias = data.lote.dias_en_etapa;
                     const comidaClass = data.lote.alimentacion_hoy ? 'btn-success' : 'btn-outline-secondary';
                     const limpiezaClass = data.lote.limpieza_hoy ? 'btn-success' : 'btn-outline-secondary';
-                    content = `<div class="d-flex justify-content-between align-items-center"><h5 class="mb-0">Lote Actual: ${data.lote.codigo}</h5><span class="badge bg-info-subtle text-info-emphasis rounded-pill">Días en etapa: ${dias}</span></div><hr class="my-3"><ul class="list-group list-group-flush mb-3"><li class="list-group-item d-flex justify-content-between align-items-center ps-0"><span><i class="bi bi-box-seam me-2 text-muted"></i>Cantidad Total</span><strong id="loteCantidad">${data.lote.cantidad}</strong></li><li class="list-group-item d-flex justify-content-between align-items-center ps-0"><span><i class="bi bi-bounding-box-circles me-2 text-muted"></i>Capacidad Máxima</span><strong>${data.unidad.capacidad}</strong></li><li class="list-group-item d-flex justify-content-between align-items-center ps-0"><span><i class="bi bi-egg-fried me-2 text-muted"></i>Alimento Diario</span><strong>${data.lote.alimento_diario} kg</strong></li></ul>`;
-                    content += '<hr class="my-3"><div id="tallaSection"><h6>Tallaje de Alevines</h6>';
-                    let tallaFormHTML = `<form id="tallaForm" class="d-none" data-lote-id="${data.lote.id}"><div class="row gx-2 align-items-center"><div class="col"><input type="number" step="0.1" name="talla_min_cm" class="form-control" placeholder="Desde (cm)" value="${data.lote.talla_min_cm || ''}" required></div><div class="col"><input type="number" step="0.1" name="talla_max_cm" class="form-control" placeholder="Hasta (cm)" value="${data.lote.talla_max_cm || ''}" required></div><div class="col-auto"><button type="submit" class="btn btn-primary">Guardar</button></div></div><div id="tallaErrors" class="text-danger small mt-1"></div></form>`;
+                    content = `<div class="d-flex justify-content-between align-items-center"><h5 class="mb-0">Lote: ${data.lote.codigo}</h5><span class="badge bg-info-subtle text-info-emphasis rounded-pill">Días: ${dias}</span></div><hr class="my-3"><ul class="list-group list-group-flush mb-3"><li class="list-group-item d-flex justify-content-between align-items-center ps-0"><span><i class="bi bi-box-seam me-2 text-muted"></i>Cantidad Total</span><strong id="loteCantidad">${data.lote.cantidad}</strong></li><li class="list-group-item d-flex justify-content-between align-items-center ps-0"><span><i class="bi bi-bounding-box-circles me-2 text-muted"></i>Capacidad Máxima</span><strong>${data.unidad.capacidad}</strong></li><li class="list-group-item d-flex justify-content-between align-items-center ps-0"><span><i class="bi bi-egg-fried me-2 text-muted"></i>Alimento Diario</span><strong id="alimentoDiarioDisplay">${data.lote.alimento_diario} kg/día</strong></li></ul>`;
+                    
+                    content += '<hr class="my-3"><div id="tallaSection" class="mb-3"><h6>Tallaje de Alevines</h6>';
+                    let tallaFormHTML = `<form id="tallaForm" class="d-none" data-lote-id="${data.lote.id}"><div class="row g-2 align-items-center"><div class="col"><label class="form-label small">Talla (cm)</label><div class="input-group"><input type="number" step="0.1" name="talla_min_cm" class="form-control" placeholder="Desde" value="${data.lote.talla_min_cm || ''}" required><input type="number" step="0.1" name="talla_max_cm" class="form-control" placeholder="Hasta" value="${data.lote.talla_max_cm || ''}" required></div></div><div class="col-auto align-self-end"><button type="submit" class="btn btn-primary">Guardar</button></div></div><div id="tallaErrors" class="text-danger small mt-1"></div></form>`;
                     if (data.lote.talla_min_cm && data.lote.talla_max_cm) {
-                        content += `<div id="tallaWrapper" class="d-flex justify-content-between align-items-center"><span>Rango actual: <strong>${data.lote.talla_min_cm} - ${data.lote.talla_max_cm} cm</strong></span><button class="btn btn-sm btn-outline-secondary" id="showTallaFormBtn"><i class="bi bi-pencil"></i> Editar</button></div>${tallaFormHTML}`;
-                    } else if (dias >= 7) {
-                        content += `<div id="tallaWrapper"><button class="btn btn-info w-100" id="showTallaFormBtn"><i class="bi bi-rulers me-2"></i>Realizar Medición</button></div>${tallaFormHTML}`;
+                        content += `<div id="tallaWrapper" class="d-flex justify-content-between align-items-center"><span>Rango actual: <strong>${data.lote.talla_min_cm} - ${data.lote.talla_max_cm} cm</strong></span><button class="btn btn-sm btn-outline-secondary" id="showTallaFormBtn"><i class="bi bi-pencil"></i></button></div>${tallaFormHTML}`;
                     } else {
-                        content += `<p class="text-muted small">La medición estará disponible a los 7 días (faltan ${7 - dias} día/s).</p>`;
+                        content += `<div id="tallaWrapper"><button class="btn btn-info w-100" id="showTallaFormBtn"><i class="bi bi-rulers me-2"></i>Realizar Medición</button></div>${tallaFormHTML}`;
                     }
                     content += '</div>';
+
+                    content += '<div id="pesoSection" class="mb-3"><h6>Pesaje (gramos)</h6>';
+                    let pesoFormHTML = `<form id="pesoForm" class="d-none" data-lote-id="${data.lote.id}"><div class="row g-2 align-items-center"><div class="col"><label class="form-label small">Peso Promedio (g)</label><input type="number" step="0.1" name="peso_promedio_pez_gr" class="form-control" placeholder="Peso (g)" value="${data.lote.peso_promedio_pez_gr || ''}" required></div><div class="col-auto align-self-end"><button type="submit" class="btn btn-primary">Guardar</button></div></div><div id="pesoErrors" class="text-danger small mt-1"></div></form>`;
+                    if (data.lote.peso_promedio_pez_gr) {
+                        content += `<div id="pesoWrapper" class="d-flex justify-content-between align-items-center"><span>Peso promedio actual: <strong>${data.lote.peso_promedio_pez_gr} g</strong></span><button class="btn btn-sm btn-outline-secondary" id="showPesoFormBtn"><i class="bi bi-pencil"></i></button></div>${pesoFormHTML}`;
+                    } else {
+                        content += `<div id="pesoWrapper"><button class="btn btn-info w-100" id="showPesoFormBtn"><i class="bi bi-rulers me-2"></i>Realizar Pesaje</button></div>${pesoFormHTML}`;
+                    }
+                    content += '</div>';
+
                     content += `<hr class="my-3"><form id="mortalidadForm" data-lote-id="${data.lote.id}" autocomplete="off" class="mb-3"><label class="form-label small">Registrar Bajas</label><div class="input-group"><span class="input-group-text"><i class="bi bi-heartbreak-fill"></i></span><input type="number" name="cantidad" class="form-control" placeholder="N° de muertos" required min="1"><button type="submit" class="btn btn-danger">Registrar</button></div><div id="mortalidadErrors" class="small mt-1"></div></form><div class="mt-4 text-center"><h6 class="text-muted small text-uppercase">Acciones</h6><div class="d-flex justify-content-center gap-3 mt-3"><div><button class="btn ${comidaClass} rounded-circle d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;" data-tarea="alimentacion" data-lote-id="${data.lote.id}" title="Alimentar"><i class="bi bi-tropical-fish fs-5"></i></button><div class="small mt-1">Alimentar</div></div><div><button class="btn ${limpiezaClass} rounded-circle d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;" data-tarea="limpieza" data-lote-id="${data.lote.id}" title="Limpiar"><i class="bi bi-snow fs-5"></i></button><div class="small mt-1">Limpiar</div></div>`;
-                    if (data.lote.talla_max_cm && data.lote.talla_max_cm >= 20) {
+                    if (data.lote.talla_max_cm && data.lote.talla_max_cm >= 15) {
                         content += `<div><button class="btn btn-primary rounded-circle d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;" id="openMoveToJaulaBtn" data-lote-id="${data.lote.id}" title="Mover a Jaula"><i class="bi bi-arrows-move fs-5"></i></button><div class="small mt-1">Mover</div></div>`;
                     }
                     content += `<div><button class="btn btn-warning rounded-circle d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;" id="openReallocateBtn" data-lote-id="${data.lote.id}" title="Reasignar Alevines"><i class="bi bi-distribute-vertical fs-5"></i></button><div class="small mt-1">Reasignar</div></div>`;
@@ -99,12 +113,40 @@ document.addEventListener('DOMContentLoaded', function () {
                     content = `<div class="text-center p-3"><p class="lead">Esta unidad está disponible.</p></div>`;
                 }
                 modalBody.innerHTML = content;
-            })
-            .catch(error => { modalBody.innerHTML = `<p class="text-danger">Error al cargar los detalles.</p>`; console.error('Error:', error); });
+            });
+    }
+
+    detailModalEl.addEventListener('show.bs.modal', function (event) {
+        const button = event.relatedTarget;
+        if (button && button.hasAttribute('data-unidad-id')) {
+            detailModalEl.dataset.unidadId = button.dataset.unidadId;
+            refreshModalContent(button.dataset.unidadId);
+        }
     });
 
+    function fetchAndDisplayJaulas(loteId) {
+        const jaulaContainer = document.getElementById('jaulaListContainer');
+        jaulaContainer.innerHTML = '<p>Buscando jaulas aptas...</p>';
+        fetch(`/produccion/api/jaulas_disponibles/${loteId}/`)
+            .then(response => response.json())
+            .then(jaulas => {
+                if (jaulas.length > 0) {
+                    let listHTML = '<p>1. Selecciona una jaula de destino:</p><div class="list-group">';
+                    jaulas.forEach(jaula => {
+                        listHTML += `<label class="list-group-item list-group-item-action"><input class="form-check-input me-2" type="radio" name="jaula_destino" value="${jaula.id}" required><strong>${jaula.codigo}</strong> - Cap: ${jaula.capacidad_maxima_unidades}</label>`;
+                    });
+                    listHTML += '</div>';
+                    jaulaContainer.innerHTML = listHTML;
+                } else {
+                    jaulaContainer.innerHTML = '<div class="alert alert-warning">No hay jaulas disponibles. <button type="button" id="openCreateJaulaBtn" class="btn btn-sm btn-success ms-2">Añadir una nueva</button></div>';
+                }
+            });
+    }
+
     document.body.addEventListener('click', function(event) {
-        const tareaButton = event.target.closest('[data-tarea]');
+        const button = event.target.closest('button');
+        if (!button) return;
+        const tareaButton = button.closest('[data-tarea]');
         if (tareaButton) {
             const loteId = tareaButton.dataset.loteId;
             const tarea = tareaButton.dataset.tarea;
@@ -112,27 +154,24 @@ document.addEventListener('DOMContentLoaded', function () {
             .then(response => response.json())
             .then(data => { if (data.success) { tareaButton.classList.remove('btn-outline-secondary'); tareaButton.classList.add('btn-success'); tareaButton.blur(); }});
         }
-        if (event.target.id === 'showTallaFormBtn') {
+        if (button.id === 'showTallaFormBtn') {
             document.getElementById('tallaWrapper').classList.add('d-none');
             document.getElementById('tallaForm').classList.remove('d-none');
         }
-        if (event.target.id === 'openMoveToJaulaBtn') {
-            const loteId = event.target.dataset.loteId;
-            const moveBody = document.getElementById('moveLoteToJaulaBody');
-            moveBody.innerHTML = '<p>Buscando jaulas...</p>';
+        if (button.id === 'showPesoFormBtn') {
+            document.getElementById('pesoWrapper').classList.add('d-none');
+            document.getElementById('pesoForm').classList.remove('d-none');
+        }
+        if (button.id === 'openMoveToJaulaBtn') {
+            const loteId = button.dataset.loteId;
+            document.getElementById('moveLoteToJaulaForm').dataset.loteId = loteId;
+            document.getElementById('moveQuantityContainer').classList.add('d-none');
+            document.getElementById('confirmMoveBtn').classList.add('d-none');
             detailModal.hide();
             moveLoteToJaulaModal.show();
-            fetch('/produccion/api/jaulas_disponibles/')
-                .then(response => response.json())
-                .then(jaulas => {
-                    if (jaulas.length > 0) {
-                        let listHTML = '<p>Selecciona una jaula de destino:</p><div class="list-group">';
-                        jaulas.forEach(jaula => { listHTML += `<button type="button" class="list-group-item list-group-item-action move-lote-to-jaula-target" data-jaula-id="${jaula.id}" data-lote-id="${loteId}"><strong>${jaula.codigo}</strong> - Capacidad: ${jaula.capacidad_maxima_unidades}</button>`; });
-                        moveBody.innerHTML = listHTML;
-                    } else { moveBody.innerHTML = '<div class="alert alert-warning">No hay jaulas disponibles. <a href="{% url "jaula-create" %}" class="alert-link">Añadir una nueva</a>.</div>'; }
-                });
+            fetchAndDisplayJaulas(loteId);
         }
-        const moveJaulaTarget = event.target.closest('.move-lote-to-jaula-target');
+        const moveJaulaTarget = button.closest('.move-lote-to-jaula-target');
         if (moveJaulaTarget) {
             const loteId = moveJaulaTarget.dataset.loteId;
             const jaulaId = moveJaulaTarget.dataset.jaulaId;
@@ -142,8 +181,13 @@ document.addEventListener('DOMContentLoaded', function () {
                 .then(data => { if (data.success) { alert(data.message); window.location.reload(); } else { alert('Error: ' + data.error); } });
             }
         }
-        if (event.target.id === 'openReallocateBtn') {
-            const loteId = event.target.dataset.loteId;
+        if (button.id === 'openCreateJaulaBtn') {
+            document.getElementById('createJaulaForm').reset();
+            moveLoteToJaulaModal.hide();
+            createJaulaModal.show();
+        }
+        if (button.id === 'openReallocateBtn') {
+            const loteId = button.dataset.loteId;
             const reallocateList = document.getElementById('reallocateList');
             reallocateList.innerHTML = '<p>Buscando artesas...</p>';
             detailModal.hide();
@@ -154,7 +198,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 .then(artesas => {
                     if (artesas.length > 0) {
                         let selectHTML = '<label class="form-label">Artesa de Destino</label><select class="form-select" name="artesa_destino" required>';
-                        artesas.forEach(artesa => { selectHTML += `<option value="${artesa.id}">${artesa.codigo} ${artesa.talla_info} - Cap: ${artesa.capacidad_maxima_unidades}</option>`; });
+                        artesas.forEach(artesa => { selectHTML += `<option value="${artesa.id}">${artesa.codigo} - Cap: ${artesa.capacidad_maxima_unidades}</option>`; });
                         selectHTML += '</select>';
                         reallocateList.innerHTML = selectHTML;
                     } else { reallocateList.innerHTML = '<div class="alert alert-warning">No hay otras artesas disponibles.</div>'; }
@@ -162,21 +206,31 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
+    document.body.addEventListener('change', function(event) {
+        if (event.target.name === 'jaula_destino') {
+            document.getElementById('moveQuantityContainer').classList.remove('d-none');
+            document.getElementById('confirmMoveBtn').classList.remove('d-none');
+        }
+    });
+
     document.body.addEventListener('submit', function(event) {
-        if (event.target.id === 'tallaForm') {
+        if (event.target.id === 'tallaForm' || event.target.id === 'pesoForm') {
             event.preventDefault();
             const form = event.target;
-            const loteId = form.dataset.loteId; // Changed from artesaId
-            const errorDiv = form.querySelector('#tallaErrors');
+            const loteId = form.dataset.loteId;
             const formData = new FormData(form);
-            fetch(`/produccion/api/lote/${loteId}/definir_talla/`, { method: 'POST', body: formData, headers: {'X-CSRFToken': csrfToken} }) // Changed URL
+            const isPesoForm = form.id === 'pesoForm';
+            const url = isPesoForm ? `/produccion/api/lote/${loteId}/definir_peso/` : `/produccion/api/lote/${loteId}/definir_talla/`;
+            fetch(url, { method: 'POST', body: formData, headers: {'X-CSRFToken': csrfToken} })
             .then(response => response.json())
             .then(data => {
                 if(data.success) {
-                    const newMin = formData.get('talla_min_cm');
-                    const newMax = formData.get('talla_max_cm');
-                    document.getElementById('tallaSection').innerHTML = `<p class="text-success fw-bold"><i class="bi bi-check-circle-fill me-2"></i>Talla guardada: ${newMin} - ${newMax} cm</p>`;
-                } else { errorDiv.textContent = data.error || 'Error al guardar.'; }
+                    const unidadId = detailModalEl.dataset.unidadId;
+                    refreshModalContent(unidadId);
+                } else {
+                    const errorDiv = form.querySelector('.text-danger');
+                    if (errorDiv) errorDiv.textContent = data.error || 'Error al guardar.';
+                }
             });
         }
         if (event.target.id === 'mortalidadForm') {
@@ -185,12 +239,16 @@ document.addEventListener('DOMContentLoaded', function () {
             const loteId = form.getAttribute('data-lote-id');
             const errorDiv = form.querySelector('#mortalidadErrors');
             const cantidadSpan = document.getElementById('loteCantidad');
+            const alimentoSpan = document.getElementById('alimentoDiarioDisplay');
             const formData = new FormData(form);
             fetch(`/produccion/api/lote/${loteId}/registrar_mortalidad/`, { method: 'POST', body: formData, headers: {'X-CSRFToken': csrfToken} })
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
                         cantidadSpan.textContent = data.nueva_cantidad;
+                        if(alimentoSpan) {
+                            alimentoSpan.textContent = `${data.nuevo_alimento} g/día`;
+                        }
                         form.reset();
                         errorDiv.innerHTML = '<span class="text-success small">Bajas registradas.</span>';
                     } else {
@@ -199,6 +257,38 @@ document.addEventListener('DOMContentLoaded', function () {
                 })
                 .catch(error => { errorDiv.textContent = 'Error de conexión.'; });
         }
+        if (event.target.id === 'moveLoteToJaulaForm') {
+            event.preventDefault();
+            const form = event.target;
+            const loteId = form.dataset.loteId;
+            const formData = new FormData(form);
+            const errorDiv = document.getElementById('moveLoteToJaulaErrors');
+            errorDiv.textContent = '';
+            fetch(`/produccion/api/lote/${loteId}/mover_a_jaula/`, { method: 'POST', body: formData, headers: {'X-CSRFToken': csrfToken} })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) { alert(data.message); window.location.reload(); } 
+                else { errorDiv.textContent = data.error || 'Ocurrió un error.'; }
+            });
+        }
+    });
+    
+    document.getElementById('createJaulaForm').addEventListener('submit', function(event){
+        event.preventDefault();
+        const loteId = document.getElementById('moveLoteToJaulaForm').dataset.loteId;
+        const errorDiv = document.getElementById('createJaulaErrors');
+        errorDiv.textContent = '';
+        fetch('{% url "jaula-create" %}', {
+            method: 'POST', body: new FormData(this), headers: {'X-CSRFToken': csrfToken}
+        }).then(response => {
+            if (response.ok) {
+                createJaulaModal.hide();
+                moveLoteToJaulaModal.show();
+                fetchAndDisplayJaulas(loteId);
+            } else {
+                errorDiv.textContent = 'Error al crear la jaula.';
+            }
+        });
     });
 
     document.getElementById('reallocateForm').addEventListener('submit', function(event){
@@ -206,7 +296,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const loteId = this.dataset.loteId;
         const formData = new FormData(this);
         const errorDiv = document.getElementById('reallocateErrors');
-        fetch(`/produccion/api/lote/${loteId}/reasignar/`, { method: 'POST', body: formData, headers: {'X-CSRFToken': csrfToken} })
+        fetch(`/produccion/api/lote/${loteId}/reasignar_alevines/`, { method: 'POST', body: formData, headers: {'X-CSRFToken': csrfToken} })
         .then(response => response.json())
         .then(data => { if (data.success) { alert(data.message); window.location.reload(); } else { errorDiv.textContent = data.error; } });
     });

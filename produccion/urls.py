@@ -31,16 +31,16 @@ urlpatterns = [
     # Lógica de Ovas
     path('api/lote/ova/crear/<int:bastidor_id>/', views.lote_ova_create_view, name='lote-ova-create'),
     path('api/lote/<int:lote_id>/mover_a_artesa/<int:artesa_id>/', views.mover_lote_a_artesa, name='mover-lote-a-artesa'),
-
-    # Lógica de Alevines
-    path('api/lote/<int:pk>/definir_talla/', views.artesa_definir_talla_json, name='lote-definir-talla'), # <-- ESTA ES LA LÍNEA CORREGIDA
-    path('api/lote/<int:lote_origen_id>/reasignar/', views.reasignar_alevines_json, name='reasignar-alevines'),
-    path('api/lote/<int:lote_id>/mover_a_jaula/<int:jaula_id>/', views.mover_lote_a_jaula, name='mover-lote-a-jaula'),
-    path('api/artesas_disponibles/', views.listar_artesas_disponibles_json, name='listar-artesas-disponibles'),
     path('api/artesas_disponibles/<int:lote_id_origen>/', views.listar_artesas_disponibles_json, name='listar-otras-artesas-disponibles'),
     
+    # Lógica de Alevines
+    path('api/lote/<int:pk>/definir_talla/', views.lote_definir_talla_json, name='lote-definir-talla'),
+    path('api/lote/<int:pk>/definir_peso/', views.lote_definir_peso_json, name='lote-definir-peso'),
+    path('api/lote/<int:lote_origen_id>/reasignar_alevines/', views.reasignar_alevines_json, name='reasignar-alevines'),
+    path('api/lote/<int:lote_id>/mover_a_jaula/', views.mover_lote_a_jaula, name='mover-lote-a-jaula'),
+    
     # Lógica de Engorde
-    path('api/jaulas_disponibles/', views.listar_jaulas_disponibles_json, name='listar-jaulas-disponibles'),
+    path('api/jaulas_disponibles/<int:lote_id>/', views.listar_jaulas_disponibles_json, name='listar-jaulas-disponibles'),
     path('api/jaulas_disponibles/<int:lote_id_origen>/', views.listar_otras_jaulas_disponibles_json, name='listar-otras-jaulas-disponibles'),
     path('api/lote/<int:lote_origen_id>/reasignar_engorde/', views.reasignar_engorde_json, name='reasignar-engorde'),
 

@@ -9,12 +9,10 @@ class BastidorAdmin(admin.ModelAdmin):
 
 @admin.register(Artesa)
 class ArtesaAdmin(admin.ModelAdmin):
-    # 'talla_min_cm' y 'talla_max_cm' han sido eliminados de list_display
+    # REMOVED talla fields from here
     list_display = ('codigo', 'capacidad_maxima_unidades', 'esta_disponible')
     list_filter = ('esta_disponible',)
     readonly_fields = ('codigo',)
-    # 'talla_min_cm' y 'talla_max_cm' han sido eliminados de fields
-    fields = ('capacidad_maxima_unidades', 'esta_disponible')
 
 @admin.register(Jaula)
 class JaulaAdmin(admin.ModelAdmin):
@@ -24,8 +22,8 @@ class JaulaAdmin(admin.ModelAdmin):
 
 @admin.register(Lote)
 class LoteAdmin(admin.ModelAdmin):
-    # Aquí es donde se deben mostrar los campos de talla
-    list_display = ('codigo_lote', 'etapa_actual', 'cantidad_total_peces', 'ubicacion_actual', 'talla_min_cm', 'talla_max_cm', 'fecha_ingreso_etapa')
+    # ADDED talla fields here
+    list_display = ('codigo_lote', 'etapa_actual', 'cantidad_total_peces', 'talla_min_cm', 'talla_max_cm', 'ubicacion_actual', 'fecha_ingreso_etapa')
     list_filter = ('etapa_actual',)
     readonly_fields = ('codigo_lote',)
     

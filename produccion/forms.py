@@ -30,8 +30,18 @@ class RegistroMortalidadForm(forms.ModelForm):
         model = RegistroMortalidad
         fields = ['cantidad']
 
-# --- FORMULARIO CORREGIDO ---
 class ArtesaTallaForm(forms.ModelForm):
     class Meta:
-        model = Lote  # <-- Change Artesa to Lote
+        model = Lote
+        fields = ['talla_min_cm', 'talla_max_cm', 'peso_promedio_pez_gr']
+
+# --- FORMULARIOS DE MEDICIÓN DIVIDIDOS ---
+class LoteTallaForm(forms.ModelForm):
+    class Meta:
+        model = Lote
         fields = ['talla_min_cm', 'talla_max_cm']
+
+class LotePesoForm(forms.ModelForm):
+    class Meta:
+        model = Lote
+        fields = ['peso_promedio_pez_gr']
