@@ -49,6 +49,8 @@
 
 <div class="modal fade" id="detailModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-header"><h5 class="modal-title" id="detailModalTitle">Detalle</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body" id="detailModalBody"></div></div></div></div>
 
+<div class="modal fade" id="addLoteModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-header"><h5 class="modal-title">Añadir Ovas a Bastidor <span id="addLoteBastidorCodigo"></span></h5><button type="button" class="btn-close" data-bs-toggle="modal" data-bs-target="#detailModal"></button></div><div class="modal-body"><form id="addLoteForm" autocomplete="off"><div class="mb-3"><label for="id_cantidad_total_peces_ova" class="form-label">Cantidad de Ovas</label><input type="number" name="cantidad_total_peces" class="form-control" id="id_cantidad_total_peces_ova" required min="1"><div class="form-text">Capacidad máxima: <span id="addLoteCapacidad"></span> ovas.</div></div><div id="addLoteErrors" class="text-danger small mt-2"></div><div class="d-flex justify-content-end mt-3"><button type="button" class="btn btn-light me-2" data-bs-toggle="modal" data-bs-target="#detailModal">Cancelar</button><button type="submit" class="btn btn-primary">Guardar Lote</button></div></form></div></div></div></div>
+
 {% endblock %}
 
 
@@ -58,9 +60,9 @@ document.addEventListener('DOMContentLoaded', function () {
     const detailModalEl = document.getElementById('detailModal');
     if (!detailModalEl) return;
     const detailModal = new bootstrap.Modal(detailModalEl);
+    const addLoteModal = new bootstrap.Modal(document.getElementById('addLoteModal'));
     
-    // Se comentan los modals que no se van a usar
-    // const addLoteModal = new bootstrap.Modal(document.getElementById('addLoteModal'));
+    // Se comentan los modals avanzados que no se van a usar
     // const moveLoteModal = new bootstrap.Modal(document.getElementById('moveLoteModal'));
     // const createArtesaModal = new bootstrap.Modal(document.getElementById('createArtesaModal'));
     
@@ -85,18 +87,14 @@ document.addEventListener('DOMContentLoaded', function () {
                     const limpiezaClass = data.lote.limpieza_hoy ? 'btn-success' : 'btn-outline-secondary';
                     const moverClass = dias >= 15 ? 'btn-primary' : 'btn-outline-secondary';
                     
-                    // Se mantiene la información del lote y el formulario de bajas
                     content = `<div class="d-flex justify-content-between align-items-center"><h5 class="mb-0">Lote Actual: ${data.lote.codigo}</h5><span class="badge bg-info-subtle text-info-emphasis rounded-pill">Días en etapa: ${dias}</span></div><hr class="my-3"><ul class="list-group list-group-flush mb-3"><li class="list-group-item d-flex justify-content-between align-items-center ps-0"><span><i class="bi bi-box-seam me-2 text-muted"></i>Cantidad Total</span><strong id="loteCantidad">${data.lote.cantidad}</strong></li><li class="list-group-item d-flex justify-content-between align-items-center ps-0"><span><i class="bi bi-bounding-box-circles me-2 text-muted"></i>Capacidad Máxima</span><strong>${data.unidad.capacidad}</strong></li></ul><form id="mortalidadForm" data-lote-id="${data.lote.id}" autocomplete="off" class="mb-3"><label class="form-label small">Registrar Bajas</label><div class="input-group"><span class="input-group-text"><i class="bi bi-heartbreak-fill"></i></span><input type="number" name="cantidad" class="form-control" placeholder="N° de muertos" required min="1"><button type="submit" class="btn btn-danger">Registrar</button></div><div id="mortalidadErrors" class="small mt-1"></div></form>`;
                     
-                    // Se comenta la sección de ACCIONES
+                    // Se comenta la sección de ACCIONES DIARIAS
                     /*
                     content += `<div class="mt-4 text-center"><h6 class="text-muted small text-uppercase">Acciones Diarias</h6><div class="d-flex justify-content-center gap-3 mt-3"><div><button class="btn ${limpiezaClass} rounded-circle d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;" data-tarea="limpieza" data-lote-id="${data.lote.id}" title="Limpiar"><i class="bi bi-snow fs-5"></i></button><div class="small mt-1">Limpiar</div></div><div><button class="btn ${moverClass} rounded-circle d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;" id="openMoveLoteBtn" data-lote-id="${data.lote.id}" ${moverDisabled} title="Mover Lote (habilitado a los 15 días)"><i class="bi bi-arrows-move fs-5"></i></button><div class="small mt-1">Mover</div></div></div></div>`;
                     */
                 } else {
-                    content = `<div class="text-center p-3"><p class="lead">Esta unidad está disponible.</p>`;
-                    // Se comenta el botón para añadir ovas
-                    // content += `<button class="btn btn-success btn-lg" id="openAddLoteBtn" data-bastidor-id="${data.unidad.id}" data-bastidor-codigo="${data.unidad.codigo}" data-bastidor-capacidad="${data.unidad.capacidad}"><i class="bi bi-plus-circle me-2"></i>Añadir Ovas</button>`;
-                    content += `</div>`;
+                    content = `<div class="text-center p-3"><p class="lead">Esta unidad está disponible.</p><button class="btn btn-success btn-lg" id="openAddLoteBtn" data-bastidor-id="${data.unidad.id}" data-bastidor-codigo="${data.unidad.codigo}" data-bastidor-capacidad="${data.unidad.capacidad}"><i class="bi bi-plus-circle me-2"></i>Añadir Ovas</button></div>`;
                 }
                 modalBody.innerHTML = content;
             })
@@ -125,7 +123,6 @@ document.addEventListener('DOMContentLoaded', function () {
     */
 
     document.body.addEventListener('click', function(event) {
-        // La lógica para marcar tareas se mantiene por si se activa en el futuro
         const tareaButton = event.target.closest('[data-tarea]');
         if (tareaButton) {
             const loteId = tareaButton.dataset.loteId;
@@ -135,6 +132,25 @@ document.addEventListener('DOMContentLoaded', function () {
             .then(data => { if (data.success) { tareaButton.classList.remove('btn-outline-secondary'); tareaButton.classList.add('btn-success'); tareaButton.blur(); }});
         }
         
+        if (event.target.id === 'openAddLoteBtn') {
+            const button = event.target;
+            document.getElementById('addLoteBastidorCodigo').textContent = button.getAttribute('data-bastidor-codigo');
+            document.getElementById('addLoteCapacidad').textContent = button.getAttribute('data-bastidor-capacidad');
+            const addLoteForm = document.getElementById('addLoteForm');
+            let hiddenInput = addLoteForm.querySelector('input[name="bastidor_id"]');
+            if (!hiddenInput) {
+                hiddenInput = document.createElement('input');
+                hiddenInput.type = 'hidden';
+                hiddenInput.name = 'bastidor_id';
+                addLoteForm.appendChild(hiddenInput);
+            }
+            hiddenInput.value = button.getAttribute('data-bastidor-id');
+            document.getElementById('addLoteErrors').innerHTML = '';
+            addLoteForm.reset();
+            detailModal.hide();
+            addLoteModal.show();
+        }
+
         // Se comentan los manejadores de click de las funciones avanzadas
         /*
         if (event.target.id === 'openMoveLoteBtn') {
@@ -158,25 +174,20 @@ document.addEventListener('DOMContentLoaded', function () {
             moveLoteModal.hide();
             createArtesaModal.show();
         }
-        if (event.target.id === 'openAddLoteBtn') {
-            const button = event.target;
-            document.getElementById('addLoteBastidorCodigo').textContent = button.getAttribute('data-bastidor-codigo');
-            document.getElementById('addLoteCapacidad').textContent = button.getAttribute('data-bastidor-capacidad');
-            const addLoteForm = document.getElementById('addLoteForm');
-            let hiddenInput = addLoteForm.querySelector('input[name="bastidor_id"]');
-            if (!hiddenInput) {
-                hiddenInput = document.createElement('input');
-                hiddenInput.type = 'hidden';
-                hiddenInput.name = 'bastidor_id';
-                addLoteForm.appendChild(hiddenInput);
-            }
-            hiddenInput.value = button.getAttribute('data-bastidor-id');
-            document.getElementById('addLoteErrors').innerHTML = '';
-            addLoteForm.reset();
-            detailModal.hide();
-            addLoteModal.show();
-        }
         */
+    });
+    
+    document.getElementById('addLoteForm').addEventListener('submit', function (event) {
+        event.preventDefault();
+        const formData = new FormData(this);
+        const bastidorIdInput = this.querySelector('input[name="bastidor_id"]');
+        if (!bastidorIdInput) return;
+        const bastidorId = bastidorIdInput.value;
+        const errorDiv = document.getElementById('addLoteErrors');
+        fetch(`/produccion/api/lote/ova/crear/${bastidorId}/`, { method: 'POST', body: formData, headers: {'X-CSRFToken': csrfToken} })
+            .then(response => response.json())
+            .then(data => { if (data.success) { window.location.reload(); } else { errorDiv.textContent = data.error || 'Ocurrió un error.'; }})
+            .catch(error => { errorDiv.textContent = 'Error de conexión.'; });
     });
     
     // Se comentan los event listeners de los formularios avanzados
@@ -192,22 +203,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 else { errorDiv.textContent = 'Error al crear la artesa.'; }
             });
     });
-
-    document.getElementById('addLoteForm').addEventListener('submit', function (event) {
-        event.preventDefault();
-        const formData = new FormData(this);
-        const bastidorIdInput = this.querySelector('input[name="bastidor_id"]');
-        if (!bastidorIdInput) return;
-        const bastidorId = bastidorIdInput.value;
-        const errorDiv = document.getElementById('addLoteErrors');
-        fetch(`/produccion/api/lote/ova/crear/${bastidorId}/`, { method: 'POST', body: formData, headers: {'X-CSRFToken': csrfToken} })
-            .then(response => response.json())
-            .then(data => { if (data.success) { window.location.reload(); } else { errorDiv.textContent = data.error || 'Ocurrió un error.'; }})
-            .catch(error => { errorDiv.textContent = 'Error de conexión.'; });
-    });
     */
 
-    // Se mantiene el listener para el formulario de registrar bajas
     document.body.addEventListener('submit', function(event) {
         if (event.target && event.target.id === 'mortalidadForm') {
             event.preventDefault();
