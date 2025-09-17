@@ -23,9 +23,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-)-nx6(k*0fe+x89r*#i4%0gqxwwqo8peusg)de*ynue*c=-+%v'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['sierranevada.work']
 
 
 # Application definition
@@ -119,3 +119,5 @@ LOGOUT_REDIRECT_URL = 'login'
 STATICFILES_DIRS = [
     os.path.join(BASE_DIR, 'static'),
 ]
+
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
