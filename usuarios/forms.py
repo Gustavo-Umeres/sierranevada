@@ -1,5 +1,7 @@
+# forms.py CORREGIDO PARA MOSTRAR EL DNI
+
 from django import forms
-from django.contrib.auth.forms import UserCreationForm, UserChangeForm
+from django.contrib.auth.forms import UserCreationForm # UserChangeForm ya no se usa para editar
 from django.contrib.auth.models import Group
 from .models import CustomUser
 
@@ -11,7 +13,7 @@ class SecurityAnswerForm(forms.Form):
     respuesta = forms.CharField(label="Respuesta de Seguridad", required=True, widget=forms.TextInput(attrs={'class': 'form-control'}))
 
 
-# --- Formularios para Administración de Usuarios (CORRECCIÓN FINAL) ---
+# --- Formularios para Administración de Usuarios (CORREGIDOS) ---
 class CustomUserCreationForm(UserCreationForm):
     groups = forms.ModelMultipleChoiceField(
         queryset=Group.objects.all(),
@@ -22,24 +24,46 @@ class CustomUserCreationForm(UserCreationForm):
 
     class Meta(UserCreationForm.Meta):
         model = CustomUser
-        fields = ('username', 'first_name', 'last_name', 'email', 'dni', 'is_staff', 'pregunta_seguridad', 'respuesta_seguridad', 'groups')
+        fields = ('username', 'first_name', 'last_name', 'email', 'dni', 'pregunta_seguridad', 'respuesta_seguridad', 'groups')
+        
+        widgets = {
+            'username': forms.TextInput(attrs={'class': 'form-control', 'placeholder': ' '}),
+            'first_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': ' '}),
+            'last_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': ' '}),
+            'email': forms.EmailInput(attrs={'class': 'form-control', 'placeholder': ' '}),
+            'dni': forms.TextInput(attrs={'class': 'form-control', 'placeholder': ' '}),
+            'pregunta_seguridad': forms.Select(attrs={'class': 'form-select'}),
+            'respuesta_seguridad': forms.TextInput(attrs={'class': 'form-control', 'placeholder': ' '}),
+        }
 
-    # Lógica de guardado simplificada y más robusta
     def save(self, commit=True):
         user = super().save(commit=True)
         user.groups.set(self.cleaned_data.get('groups', []))
         return user
 
 
-class CustomUserChangeForm(UserChangeForm):
+# ------------------- CAMBIO IMPORTANTE AQUÍ -------------------
+# Ahora hereda de forms.ModelForm en lugar de UserChangeForm
+class CustomUserChangeForm(forms.ModelForm):
+# -------------------------------------------------------------
     groups = forms.ModelMultipleChoiceField(
         queryset=Group.objects.all(),
         widget=forms.CheckboxSelectMultiple,
         required=False,
         label="Permisos de Módulos"
     )
-    password = None
+    # Ya no se necesita "password = None" porque ModelForm no lo incluye por defecto
 
     class Meta:
         model = CustomUser
-        fields = ('username', 'first_name', 'last_name', 'email', 'dni', 'is_staff', 'is_active', 'pregunta_seguridad', 'respuesta_seguridad', 'groups')
+        fields = ('username', 'first_name', 'last_name', 'email', 'dni', 'is_active', 'pregunta_seguridad', 'respuesta_seguridad', 'groups')
+
+        widgets = {
+            'username': forms.TextInput(attrs={'class': 'form-control', 'placeholder': ' '}),
+            'first_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': ' '}),
+            'last_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': ' '}),
+            'email': forms.EmailInput(attrs={'class': 'form-control', 'placeholder': ' '}),
+            'dni': forms.TextInput(attrs={'class': 'form-control', 'placeholder': ' '}),
+            'pregunta_seguridad': forms.Select(attrs={'class': 'form-select'}),
+            'respuesta_seguridad': forms.TextInput(attrs={'class': 'form-control', 'placeholder': ' '}),
+        }

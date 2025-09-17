@@ -12,8 +12,8 @@
     {% for unidad in unidades %}
         <div class="list-group-item d-flex justify-content-between align-items-center">
              <button type="button" class="btn btn-link text-start text-decoration-none text-dark flex-grow-1 p-0 border-0"
-                    data-bs-toggle="modal" data-bs-target="#detailModal" 
-                    data-unidad-id="{{ unidad.pk }}">
+                     data-bs-toggle="modal" data-bs-target="#detailModal" 
+                     data-unidad-id="{{ unidad.pk }}">
                 <div class="d-flex w-100">
                     <div class="flex-grow-1">
                         <h5 class="mb-1">{{ unidad.codigo }}</h5>
@@ -25,7 +25,11 @@
                         {% if unidad.lote_actual %}
                             <h5 class="mb-1">{{ unidad.lote_actual.codigo_lote }}</h5>
                             <small class="text-muted">
-                                <strong>{{ unidad.lote_actual.cantidad_total_peces }} / {{ unidad.capacidad_maxima_unidades }}</strong> truchas | 
+                                <strong>{{ unidad.lote_actual.cantidad_total_peces }} / {{ unidad.capacidad_maxima_unidades }}</strong> truchas
+                                {% if unidad.lote_actual.peso_promedio_pez_gr %}
+                                    | Biomasa: <strong>{{ unidad.lote_actual.biomasa_kg|floatformat:2 }} kg</strong>
+                                {% endif %}
+                                <br>
                                 Talla: <strong>{% if unidad.lote_actual.talla_min_cm %}{{ unidad.lote_actual.talla_min_cm|floatformat:1 }}-{{ unidad.lote_actual.talla_max_cm|floatformat:1 }} cm{% else %}Sin medir{% endif %}</strong>
                             </small>
                         {% endif %}
@@ -50,7 +54,6 @@
 </div>
 
 <div class="modal fade" id="detailModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-header"><h5 class="modal-title" id="detailModalTitle">Detalle</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body" id="detailModalBody"></div></div></div></div>
-<div class="modal fade" id="reallocateJaulaModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-header"><h5 class="modal-title">Reasignar Peces de Engorde</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><form id="reallocateJaulaForm" autocomplete="off"><div id="reallocateJaulaList" class="mb-3">Cargando jaulas...</div><div class="mb-3"><label for="id_cantidad_reasignar_jaula" class="form-label">Cantidad a Mover</label><input type="number" name="cantidad" class="form-control" id="id_cantidad_reasignar_jaula" required min="1"></div><div id="reallocateJaulaErrors" class="text-danger small mt-2"></div><div class="d-flex justify-content-end mt-3"><button type="button" class="btn btn-light me-2" data-bs-dismiss="modal">Cancelar</button><button type="submit" class="btn btn-primary">Reasignar</button></div></form></div></div></div></div>
 
 {% endblock %}
 
@@ -60,7 +63,10 @@ document.addEventListener('DOMContentLoaded', function () {
     const detailModalEl = document.getElementById('detailModal');
     if (!detailModalEl) return;
     const detailModal = new bootstrap.Modal(detailModalEl);
-    const reallocateModal = new bootstrap.Modal(document.getElementById('reallocateJaulaModal'));
+    
+    // Se comenta la inicialización del modal de reasignación
+    // const reallocateModal = new bootstrap.Modal(document.getElementById('reallocateJaulaModal'));
+    
     const csrfToken = document.querySelector('input[name=csrfmiddlewaretoken]').value;
 
     function refreshModalContent(unidadId) {
@@ -77,7 +83,19 @@ document.addEventListener('DOMContentLoaded', function () {
                     const dias = data.lote.dias_en_etapa;
                     const comidaClass = data.lote.alimentacion_hoy ? 'btn-success' : 'btn-outline-secondary';
                     const limpiezaClass = data.lote.limpieza_hoy ? 'btn-success' : 'btn-outline-secondary';
-                    content = `<div class="d-flex justify-content-between align-items-center"><h5 class="mb-0">Lote: ${data.lote.codigo}</h5><span class="badge bg-info-subtle text-info-emphasis rounded-pill">Días: ${dias}</span></div><hr class="my-3"><ul class="list-group list-group-flush mb-3"><li class="list-group-item d-flex justify-content-between align-items-center ps-0"><span><i class="bi bi-box-seam me-2 text-muted"></i>Cantidad Total</span><strong id="loteCantidad">${data.lote.cantidad}</strong></li><li class="list-group-item d-flex justify-content-between align-items-center ps-0"><span><i class="bi bi-bounding-box-circles me-2 text-muted"></i>Capacidad Máxima</span><strong>${data.unidad.capacidad}</strong></li><li class="list-group-item d-flex justify-content-between align-items-center ps-0"><span><i class="bi bi-egg-fried me-2 text-muted"></i>Alimento Diario</span><strong id="alimentoDiarioDisplay">${data.lote.alimento_diario} kg/día</strong></li></ul>`;
+                    
+                    let detailsList = `<li class="list-group-item d-flex justify-content-between align-items-center ps-0"><span><i class="bi bi-box-seam me-2 text-muted"></i>Cantidad Total</span><strong id="loteCantidad">${data.lote.cantidad}</strong></li>`;
+                    
+                    if (data.lote.peso_promedio_pez_gr && data.lote.peso_promedio_pez_gr > 0) {
+                        const biomasaKg = (data.lote.cantidad * data.lote.peso_promedio_pez_gr) / 1000;
+                        detailsList += `<li class="list-group-item d-flex justify-content-between align-items-center ps-0"><span><i class="bi bi-stack me-2 text-muted"></i>Biomasa Estimada</span><strong>${biomasaKg.toFixed(2)} kg</strong></li>`;
+                    }
+                    
+                    // Se muestra la capacidad máxima, pero la línea de Alimento Diario se ha comentado
+                    detailsList += `<li class="list-group-item d-flex justify-content-between align-items-center ps-0"><span><i class="bi bi-bounding-box-circles me-2 text-muted"></i>Capacidad Máxima</span><strong>${data.unidad.capacidad}</strong></li>`;
+                    // <li class="list-group-item d-flex justify-content-between align-items-center ps-0"><span><i class="bi bi-egg-fried me-2 text-muted"></i>Alimento Diario</span><strong id="alimentoDiarioDisplay">${data.lote.alimento_diario} kg/día</strong></li>
+
+                    content = `<div class="d-flex justify-content-between align-items-center"><h5 class="mb-0">Lote: ${data.lote.codigo}</h5><span class="badge bg-info-subtle text-info-emphasis rounded-pill">Días: ${dias}</span></div><hr class="my-3"><ul class="list-group list-group-flush mb-3">${detailsList}</ul>`;
                     
                     content += '<hr class="my-3"><div id="tallaSection" class="mb-3"><h6>Tallaje de Engorde</h6>';
                     let tallaFormHTML = `<form id="tallaForm" class="d-none" data-lote-id="${data.lote.id}"><div class="row g-2 align-items-center"><div class="col"><label class="form-label small">Talla (cm)</label><div class="input-group"><input type="number" step="0.1" name="talla_min_cm" class="form-control" placeholder="Desde" value="${data.lote.talla_min_cm || ''}" required><input type="number" step="0.1" name="talla_max_cm" class="form-control" placeholder="Hasta" value="${data.lote.talla_max_cm || ''}" required></div></div><div class="col-auto align-self-end"><button type="submit" class="btn btn-primary">Guardar</button></div></div><div id="tallaErrors" class="text-danger small mt-1"></div></form>`;
@@ -96,14 +114,19 @@ document.addEventListener('DOMContentLoaded', function () {
                         content += `<div id="pesoWrapper"><button class="btn btn-info w-100" id="showPesoFormBtn"><i class="bi bi-rulers me-2"></i>Realizar Pesaje</button></div>${pesoFormHTML}`;
                     }
                     content += '</div>';
+                    
+                    content += `<hr class="my-3"><form id="mortalidadForm" data-lote-id="${data.lote.id}" autocomplete="off" class="mb-3"><label class="form-label small">Registrar Bajas</label><div class="input-group"><span class="input-group-text"><i class="bi bi-heartbreak-fill"></i></span><input type="number" name="cantidad" class="form-control" placeholder="N° de muertos" required min="1"><button type="submit" class="btn btn-danger">Registrar</button></div><div id="mortalidadErrors" class="small mt-1"></div></form>`;
 
-                    content += `<hr class="my-3"><form id="mortalidadForm" data-lote-id="${data.lote.id}" autocomplete="off" class="mb-3"><label class="form-label small">Registrar Bajas</label><div class="input-group"><span class="input-group-text"><i class="bi bi-heartbreak-fill"></i></span><input type="number" name="cantidad" class="form-control" placeholder="N° de muertos" required min="1"><button type="submit" class="btn btn-danger">Registrar</button></div><div id="mortalidadErrors" class="small mt-1"></div></form><div class="mt-4 text-center"><h6 class="text-muted small text-uppercase">Acciones</h6><div class="d-flex justify-content-center gap-3 mt-3"><div><button class="btn ${comidaClass} rounded-circle d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;" data-tarea="alimentacion" data-lote-id="${data.lote.id}" title="Alimentar"><i class="bi bi-tropical-fish fs-5"></i></button><div class="small mt-1">Alimentar</div></div><div><button class="btn ${limpiezaClass} rounded-circle d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;" data-tarea="limpieza" data-lote-id="${data.lote.id}" title="Limpiar"><i class="bi bi-snow fs-5"></i></button><div class="small mt-1">Limpiar</div></div><div><button class="btn btn-warning rounded-circle d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;" id="openReallocateJaulaBtn" data-lote-id="${data.lote.id}" title="Reasignar Peces"><i class="bi bi-distribute-vertical fs-5"></i></button><div class="small mt-1">Reasignar</div></div>`;
+                    // Se comenta toda la sección de ACCIONES
+                    /*
+                    content += `<div class="mt-4 text-center"><h6 class="text-muted small text-uppercase">Acciones</h6><div class="d-flex justify-content-center gap-3 mt-3"><div><button class="btn ${comidaClass} rounded-circle d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;" data-tarea="alimentacion" data-lote-id="${data.lote.id}" title="Alimentar"><i class="bi bi-tropical-fish fs-5"></i></button><div class="small mt-1">Alimentar</div></div><div><button class="btn ${limpiezaClass} rounded-circle d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;" data-tarea="limpieza" data-lote-id="${data.lote.id}" title="Limpiar"><i class="bi bi-snow fs-5"></i></button><div class="small mt-1">Limpiar</div></div><div><button class="btn btn-warning rounded-circle d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;" id="openReallocateJaulaBtn" data-lote-id="${data.lote.id}" title="Reasignar Peces"><i class="bi bi-distribute-vertical fs-5"></i></button><div class="small mt-1">Reasignar</div></div>`;
                     
                     if (data.lote.talla_max_cm >= 25 && data.lote.peso_promedio_pez_gr >= 270) {
                         content += `<div><button class="btn btn-success rounded-circle d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;" id="finishLoteBtn" data-lote-id="${data.lote.id}" title="Finalizar Lote"><i class="bi bi-check-circle-fill fs-5"></i></button><div class="small mt-1">Finalizar</div></div>`;
                     }
 
                     content += `</div></div>`;
+                    */
                 } else {
                     content = `<div class="text-center p-3"><p class="lead">Esta unidad está disponible.</p></div>`;
                 }
@@ -139,6 +162,9 @@ document.addEventListener('DOMContentLoaded', function () {
             document.getElementById('pesoWrapper').classList.add('d-none');
             document.getElementById('pesoForm').classList.remove('d-none');
         }
+        
+        // Se comentan los manejadores de click de las funciones avanzadas
+        /*
         if (button.id === 'openReallocateJaulaBtn') {
             const loteId = button.dataset.loteId;
             const reallocateList = document.getElementById('reallocateJaulaList');
@@ -174,6 +200,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 });
             }
         }
+        */
     });
 
     document.body.addEventListener('submit', function(event) {
@@ -201,17 +228,12 @@ document.addEventListener('DOMContentLoaded', function () {
             const form = event.target;
             const loteId = form.getAttribute('data-lote-id');
             const errorDiv = form.querySelector('#mortalidadErrors');
-            const cantidadSpan = document.getElementById('loteCantidad');
-            const alimentoSpan = document.getElementById('alimentoDiarioDisplay');
             const formData = new FormData(form);
             fetch(`/produccion/api/lote/${loteId}/registrar_mortalidad/`, { method: 'POST', body: formData, headers: {'X-CSRFToken': csrfToken} })
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
-                        cantidadSpan.textContent = data.nueva_cantidad;
-                        if(alimentoSpan) {
-                            alimentoSpan.textContent = `${data.nuevo_alimento} g/día`;
-                        }
+                        refreshModalContent(detailModalEl.dataset.unidadId);
                         form.reset();
                         errorDiv.innerHTML = '<span class="text-success small">Bajas registradas.</span>';
                     } else {
@@ -220,6 +242,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 })
                 .catch(error => { errorDiv.textContent = 'Error de conexión.'; });
         }
+        // Se comenta el manejador del formulario de reasignación
+        /*
         if (event.target.id === 'reallocateJaulaForm') {
             event.preventDefault();
             const form = event.target;
@@ -238,6 +262,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
             });
         }
+        */
     });
 });
 </script>

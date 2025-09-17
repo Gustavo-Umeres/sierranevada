@@ -48,9 +48,7 @@
 </div>
 
 <div class="modal fade" id="detailModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-header"><h5 class="modal-title" id="detailModalTitle">Detalle</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body" id="detailModalBody"></div></div></div></div>
-<div class="modal fade" id="addLoteModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-header"><h5 class="modal-title">Añadir Ovas a Bastidor <span id="addLoteBastidorCodigo"></span></h5><button type="button" class="btn-close" data-bs-toggle="modal" data-bs-target="#detailModal"></button></div><div class="modal-body"><form id="addLoteForm" autocomplete="off"><div class="mb-3"><label for="id_cantidad_total_peces_ova" class="form-label">Cantidad de Ovas</label><input type="number" name="cantidad_total_peces" class="form-control" id="id_cantidad_total_peces_ova" required min="1"><div class="form-text">Capacidad máxima: <span id="addLoteCapacidad"></span> ovas.</div></div><div id="addLoteErrors" class="text-danger small mt-2"></div><div class="d-flex justify-content-end mt-3"><button type="button" class="btn btn-light me-2" data-bs-toggle="modal" data-bs-target="#detailModal">Cancelar</button><button type="submit" class="btn btn-primary">Guardar Lote</button></div></form></div></div></div></div>
-<div class="modal fade" id="moveLoteModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-header"><h5 class="modal-title">Mover Lote a Artesa</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body" id="moveLoteBody"></div></div></div></div>
-<div class="modal fade" id="createArtesaModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-header"><h5 class="modal-title">Añadir Nueva Artesa</h5><button type="button" class="btn-close" data-bs-toggle="modal" data-bs-target="#moveLoteModal"></button></div><div class="modal-body"><form id="createArtesaForm" autocomplete="off"><div class="mb-3"><label for="id_capacidad_maxima_unidades_artesa" class="form-label">Capacidad Máxima de Alevines</label><input type="number" name="capacidad_maxima_unidades" class="form-control" id="id_capacidad_maxima_unidades_artesa" required min="1"></div><div id="createArtesaErrors" class="text-danger small mt-2"></div><div class="d-flex justify-content-end mt-3"><button type="button" class="btn btn-light me-2" data-bs-toggle="modal" data-bs-target="#moveLoteModal">Cancelar</button><button type="submit" class="btn btn-primary">Crear Artesa</button></div></form></div></div></div></div>
+
 {% endblock %}
 
 
@@ -60,9 +58,12 @@ document.addEventListener('DOMContentLoaded', function () {
     const detailModalEl = document.getElementById('detailModal');
     if (!detailModalEl) return;
     const detailModal = new bootstrap.Modal(detailModalEl);
-    const addLoteModal = new bootstrap.Modal(document.getElementById('addLoteModal'));
-    const moveLoteModal = new bootstrap.Modal(document.getElementById('moveLoteModal'));
-    const createArtesaModal = new bootstrap.Modal(document.getElementById('createArtesaModal'));
+    
+    // Se comentan los modals que no se van a usar
+    // const addLoteModal = new bootstrap.Modal(document.getElementById('addLoteModal'));
+    // const moveLoteModal = new bootstrap.Modal(document.getElementById('moveLoteModal'));
+    // const createArtesaModal = new bootstrap.Modal(document.getElementById('createArtesaModal'));
+    
     const csrfToken = document.querySelector('input[name=csrfmiddlewaretoken]').value;
 
     detailModalEl.addEventListener('show.bs.modal', function (event) {
@@ -80,18 +81,30 @@ document.addEventListener('DOMContentLoaded', function () {
                 let content = '';
                 if (data.lote) {
                     const dias = data.lote.dias_en_etapa;
-                    const moverDisabled = dias < 15 ? 'disabled' : ''; // Activado a los 15 días
+                    const moverDisabled = dias < 15 ? 'disabled' : '';
                     const limpiezaClass = data.lote.limpieza_hoy ? 'btn-success' : 'btn-outline-secondary';
-                    const moverClass = dias >= 15 ? 'btn-primary' : 'btn-outline-secondary'; // Cambia de color a los 15 días
-                    content = `<div class="d-flex justify-content-between align-items-center"><h5 class="mb-0">Lote Actual: ${data.lote.codigo}</h5><span class="badge bg-info-subtle text-info-emphasis rounded-pill">Días en etapa: ${dias}</span></div><hr class="my-3"><ul class="list-group list-group-flush mb-3"><li class="list-group-item d-flex justify-content-between align-items-center ps-0"><span><i class="bi bi-box-seam me-2 text-muted"></i>Cantidad Total</span><strong id="loteCantidad">${data.lote.cantidad}</strong></li><li class="list-group-item d-flex justify-content-between align-items-center ps-0"><span><i class="bi bi-bounding-box-circles me-2 text-muted"></i>Capacidad Máxima</span><strong>${data.unidad.capacidad}</strong></li></ul><form id="mortalidadForm" data-lote-id="${data.lote.id}" autocomplete="off" class="mb-3"><label class="form-label small">Registrar Bajas</label><div class="input-group"><span class="input-group-text"><i class="bi bi-heartbreak-fill"></i></span><input type="number" name="cantidad" class="form-control" placeholder="N° de muertos" required min="1"><button type="submit" class="btn btn-danger">Registrar</button></div><div id="mortalidadErrors" class="small mt-1"></div></form><div class="mt-4 text-center"><h6 class="text-muted small text-uppercase">Acciones Diarias</h6><div class="d-flex justify-content-center gap-3 mt-3"><div><button class="btn ${limpiezaClass} rounded-circle d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;" data-tarea="limpieza" data-lote-id="${data.lote.id}" title="Limpiar"><i class="bi bi-snow fs-5"></i></button><div class="small mt-1">Limpiar</div></div><div><button class="btn ${moverClass} rounded-circle d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;" id="openMoveLoteBtn" data-lote-id="${data.lote.id}" ${moverDisabled} title="Mover Lote (habilitado a los 15 días)"><i class="bi bi-arrows-move fs-5"></i></button><div class="small mt-1">Mover</div></div></div></div>`;
+                    const moverClass = dias >= 15 ? 'btn-primary' : 'btn-outline-secondary';
+                    
+                    // Se mantiene la información del lote y el formulario de bajas
+                    content = `<div class="d-flex justify-content-between align-items-center"><h5 class="mb-0">Lote Actual: ${data.lote.codigo}</h5><span class="badge bg-info-subtle text-info-emphasis rounded-pill">Días en etapa: ${dias}</span></div><hr class="my-3"><ul class="list-group list-group-flush mb-3"><li class="list-group-item d-flex justify-content-between align-items-center ps-0"><span><i class="bi bi-box-seam me-2 text-muted"></i>Cantidad Total</span><strong id="loteCantidad">${data.lote.cantidad}</strong></li><li class="list-group-item d-flex justify-content-between align-items-center ps-0"><span><i class="bi bi-bounding-box-circles me-2 text-muted"></i>Capacidad Máxima</span><strong>${data.unidad.capacidad}</strong></li></ul><form id="mortalidadForm" data-lote-id="${data.lote.id}" autocomplete="off" class="mb-3"><label class="form-label small">Registrar Bajas</label><div class="input-group"><span class="input-group-text"><i class="bi bi-heartbreak-fill"></i></span><input type="number" name="cantidad" class="form-control" placeholder="N° de muertos" required min="1"><button type="submit" class="btn btn-danger">Registrar</button></div><div id="mortalidadErrors" class="small mt-1"></div></form>`;
+                    
+                    // Se comenta la sección de ACCIONES
+                    /*
+                    content += `<div class="mt-4 text-center"><h6 class="text-muted small text-uppercase">Acciones Diarias</h6><div class="d-flex justify-content-center gap-3 mt-3"><div><button class="btn ${limpiezaClass} rounded-circle d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;" data-tarea="limpieza" data-lote-id="${data.lote.id}" title="Limpiar"><i class="bi bi-snow fs-5"></i></button><div class="small mt-1">Limpiar</div></div><div><button class="btn ${moverClass} rounded-circle d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;" id="openMoveLoteBtn" data-lote-id="${data.lote.id}" ${moverDisabled} title="Mover Lote (habilitado a los 15 días)"><i class="bi bi-arrows-move fs-5"></i></button><div class="small mt-1">Mover</div></div></div></div>`;
+                    */
                 } else {
-                    content = `<div class="text-center p-3"><p class="lead">Esta unidad está disponible.</p><button class="btn btn-success btn-lg" id="openAddLoteBtn" data-bastidor-id="${data.unidad.id}" data-bastidor-codigo="${data.unidad.codigo}" data-bastidor-capacidad="${data.unidad.capacidad}"><i class="bi bi-plus-circle me-2"></i>Añadir Ovas</button></div>`;
+                    content = `<div class="text-center p-3"><p class="lead">Esta unidad está disponible.</p>`;
+                    // Se comenta el botón para añadir ovas
+                    // content += `<button class="btn btn-success btn-lg" id="openAddLoteBtn" data-bastidor-id="${data.unidad.id}" data-bastidor-codigo="${data.unidad.codigo}" data-bastidor-capacidad="${data.unidad.capacidad}"><i class="bi bi-plus-circle me-2"></i>Añadir Ovas</button>`;
+                    content += `</div>`;
                 }
                 modalBody.innerHTML = content;
             })
             .catch(error => { modalBody.innerHTML = `<p class="text-danger">Error al cargar los detalles.</p>`; console.error('Error:', error); });
     });
     
+    // Se comenta la función que busca artesas, ya que no se va a usar
+    /*
     function fetchAndDisplayArtesas(loteId) {
         const moveBody = document.getElementById('moveLoteBody');
         moveBody.innerHTML = '<div class="text-center"><div class="spinner-border spinner-border-sm" role="status"></div></div>';
@@ -109,8 +122,10 @@ document.addEventListener('DOMContentLoaded', function () {
                 moveBody.innerHTML = listHTML;
             });
     }
+    */
 
     document.body.addEventListener('click', function(event) {
+        // La lógica para marcar tareas se mantiene por si se activa en el futuro
         const tareaButton = event.target.closest('[data-tarea]');
         if (tareaButton) {
             const loteId = tareaButton.dataset.loteId;
@@ -119,6 +134,9 @@ document.addEventListener('DOMContentLoaded', function () {
             .then(response => response.json())
             .then(data => { if (data.success) { tareaButton.classList.remove('btn-outline-secondary'); tareaButton.classList.add('btn-success'); tareaButton.blur(); }});
         }
+        
+        // Se comentan los manejadores de click de las funciones avanzadas
+        /*
         if (event.target.id === 'openMoveLoteBtn') {
             const loteId = event.target.dataset.loteId;
             detailModal.hide();
@@ -158,8 +176,11 @@ document.addEventListener('DOMContentLoaded', function () {
             detailModal.hide();
             addLoteModal.show();
         }
+        */
     });
     
+    // Se comentan los event listeners de los formularios avanzados
+    /*
     document.getElementById('createArtesaForm').addEventListener('submit', function(event) {
         event.preventDefault();
         const formData = new FormData(this);
@@ -184,7 +205,9 @@ document.addEventListener('DOMContentLoaded', function () {
             .then(data => { if (data.success) { window.location.reload(); } else { errorDiv.textContent = data.error || 'Ocurrió un error.'; }})
             .catch(error => { errorDiv.textContent = 'Error de conexión.'; });
     });
+    */
 
+    // Se mantiene el listener para el formulario de registrar bajas
     document.body.addEventListener('submit', function(event) {
         if (event.target && event.target.id === 'mortalidadForm') {
             event.preventDefault();
@@ -200,6 +223,11 @@ document.addEventListener('DOMContentLoaded', function () {
                         cantidadSpan.textContent = data.nueva_cantidad;
                         form.reset();
                         errorDiv.innerHTML = '<span class="text-success small">Bajas registradas.</span>';
+                        // Para no recargar toda la página, actualizamos el dato en la lista principal también
+                        const mainListItem = document.querySelector(`button[data-unidad-id="${data.unidad_id}"]`);
+                        if(mainListItem){
+                            mainListItem.querySelector('strong').textContent = `${data.nueva_cantidad} / ${data.capacidad}`;
+                        }
                     } else {
                         errorDiv.innerHTML = `<span class="text-danger small">${data.error || 'Ocurrió un error.'}</span>`;
                     }

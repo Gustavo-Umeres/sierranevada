@@ -71,6 +71,16 @@ class Lote(models.Model):
     peso_promedio_pez_gr = models.FloatField(null=True, blank=True, help_text="Peso promedio en gramos")
     tipo_alimento = models.CharField(max_length=100, blank=True)
     
+    # --- PROPIEDAD AÑADIDA ---
+    @property
+    def biomasa_kg(self):
+        """Calcula y devuelve la biomasa total del lote en kilogramos."""
+        if self.cantidad_total_peces and self.peso_promedio_pez_gr:
+            biomasa_gramos = self.cantidad_total_peces * self.peso_promedio_pez_gr
+            return biomasa_gramos / 1000
+        return 0
+    # -------------------------
+
     def __str__(self):
         return self.codigo_lote
         
