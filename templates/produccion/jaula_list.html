@@ -55,17 +55,48 @@
 
 <div class="modal fade" id="detailModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-header"><h5 class="modal-title" id="detailModalTitle">Detalle</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body" id="detailModalBody"></div></div></div></div>
 
+<div class="modal fade" id="reallocateJaulaModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Reasignar Peces</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="reallocateJaulaForm">
+                <div class="modal-body">
+                    <div class="mb-3" id="reallocateJaulaList">
+                        </div>
+                    <div class="mb-3">
+                        <label class="form-label">Cantidad a Mover</label>
+                        <input type="number" name="cantidad" class="form-control" required min="1" placeholder="N° de peces a reasignar">
+                    </div>
+                    <div id="reallocateJaulaErrors" class="text-danger small"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Reasignar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 {% endblock %}
 
 {% block scripts %}
-<script>
+{{ block.super }}  <script>
 document.addEventListener('DOMContentLoaded', function () {
     const detailModalEl = document.getElementById('detailModal');
     if (!detailModalEl) return;
-    const detailModal = new bootstrap.Modal(detailModalEl);
     
-    // Se comenta la inicialización del modal de reasignación
-    // const reallocateModal = new bootstrap.Modal(document.getElementById('reallocateJaulaModal'));
+    // Función auxiliar para inicializar modales solo si su HTML existe
+    const initModal = (id) => {
+        const el = document.getElementById(id);
+        return el ? new bootstrap.Modal(el) : null;
+    };
+
+    const detailModal = new bootstrap.Modal(detailModalEl);
+    const reallocateModal = initModal('reallocateJaulaModal');
     
     const csrfToken = document.querySelector('input[name=csrfmiddlewaretoken]').value;
 
@@ -91,9 +122,8 @@ document.addEventListener('DOMContentLoaded', function () {
                         detailsList += `<li class="list-group-item d-flex justify-content-between align-items-center ps-0"><span><i class="bi bi-stack me-2 text-muted"></i>Biomasa Estimada</span><strong>${biomasaKg.toFixed(2)} kg</strong></li>`;
                     }
                     
-                    // Se muestra la capacidad máxima, pero la línea de Alimento Diario se ha comentado
                     detailsList += `<li class="list-group-item d-flex justify-content-between align-items-center ps-0"><span><i class="bi bi-bounding-box-circles me-2 text-muted"></i>Capacidad Máxima</span><strong>${data.unidad.capacidad}</strong></li>`;
-                    // <li class="list-group-item d-flex justify-content-between align-items-center ps-0"><span><i class="bi bi-egg-fried me-2 text-muted"></i>Alimento Diario</span><strong id="alimentoDiarioDisplay">${data.lote.alimento_diario} kg/día</strong></li>
+                    detailsList += `<li class="list-group-item d-flex justify-content-between align-items-center ps-0"><span><i class="bi bi-egg-fried me-2 text-muted"></i>Alimento Diario</span><strong id="alimentoDiarioDisplay">${data.lote.alimento_diario} kg/día</strong></li>`;
 
                     content = `<div class="d-flex justify-content-between align-items-center"><h5 class="mb-0">Lote: ${data.lote.codigo}</h5><span class="badge bg-info-subtle text-info-emphasis rounded-pill">Días: ${dias}</span></div><hr class="my-3"><ul class="list-group list-group-flush mb-3">${detailsList}</ul>`;
                     
@@ -117,8 +147,6 @@ document.addEventListener('DOMContentLoaded', function () {
                     
                     content += `<hr class="my-3"><form id="mortalidadForm" data-lote-id="${data.lote.id}" autocomplete="off" class="mb-3"><label class="form-label small">Registrar Bajas</label><div class="input-group"><span class="input-group-text"><i class="bi bi-heartbreak-fill"></i></span><input type="number" name="cantidad" class="form-control" placeholder="N° de muertos" required min="1"><button type="submit" class="btn btn-danger">Registrar</button></div><div id="mortalidadErrors" class="small mt-1"></div></form>`;
 
-                    // Se comenta toda la sección de ACCIONES
-                    /*
                     content += `<div class="mt-4 text-center"><h6 class="text-muted small text-uppercase">Acciones</h6><div class="d-flex justify-content-center gap-3 mt-3"><div><button class="btn ${comidaClass} rounded-circle d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;" data-tarea="alimentacion" data-lote-id="${data.lote.id}" title="Alimentar"><i class="bi bi-tropical-fish fs-5"></i></button><div class="small mt-1">Alimentar</div></div><div><button class="btn ${limpiezaClass} rounded-circle d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;" data-tarea="limpieza" data-lote-id="${data.lote.id}" title="Limpiar"><i class="bi bi-snow fs-5"></i></button><div class="small mt-1">Limpiar</div></div><div><button class="btn btn-warning rounded-circle d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;" id="openReallocateJaulaBtn" data-lote-id="${data.lote.id}" title="Reasignar Peces"><i class="bi bi-distribute-vertical fs-5"></i></button><div class="small mt-1">Reasignar</div></div>`;
                     
                     if (data.lote.talla_max_cm >= 25 && data.lote.peso_promedio_pez_gr >= 270) {
@@ -126,7 +154,6 @@ document.addEventListener('DOMContentLoaded', function () {
                     }
 
                     content += `</div></div>`;
-                    */
                 } else {
                     content = `<div class="text-center p-3"><p class="lead">Esta unidad está disponible.</p></div>`;
                 }
@@ -163,9 +190,7 @@ document.addEventListener('DOMContentLoaded', function () {
             document.getElementById('pesoForm').classList.remove('d-none');
         }
         
-        // Se comentan los manejadores de click de las funciones avanzadas
-        /*
-        if (button.id === 'openReallocateJaulaBtn') {
+        if (button.id === 'openReallocateJaulaBtn' && reallocateModal) {
             const loteId = button.dataset.loteId;
             const reallocateList = document.getElementById('reallocateJaulaList');
             reallocateList.innerHTML = '<p>Buscando otras jaulas disponibles...</p>';
@@ -200,7 +225,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 });
             }
         }
-        */
     });
 
     document.body.addEventListener('submit', function(event) {
@@ -242,8 +266,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 })
                 .catch(error => { errorDiv.textContent = 'Error de conexión.'; });
         }
-        // Se comenta el manejador del formulario de reasignación
-        /*
+        
         if (event.target.id === 'reallocateJaulaForm') {
             event.preventDefault();
             const form = event.target;
@@ -262,7 +285,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
             });
         }
-        */
     });
 });
 </script>

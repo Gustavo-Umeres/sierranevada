@@ -112,9 +112,13 @@
                         </fieldset>
 
                         <div class="mt-4 border-top pt-4 text-end">
-                            <a href="#" class="btn btn-secondary px-4 me-2">Cancelar</a>
+                            <a href="{% url 'user-list' %}" class="btn btn-secondary px-4 me-2">Cancelar</a>
                             <button type="submit" class="btn btn-primary px-4">
-                                <i class="bi bi-check-circle me-2"></i>Guardar Cambios
+                                {% if object %}
+                                    <i class="bi bi-check-circle me-2"></i>Guardar Cambios
+                                {% else %}
+                                    <i class="bi bi-plus-circle me-2"></i>Crear Usuario
+                                {% endif %}
                             </button>
                         </div>
                     </form>

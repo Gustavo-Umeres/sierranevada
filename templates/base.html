@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="es">
 {% load auth_extras %}
-<head>
+{% load static %} <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Sierra Nevada | Control</title>
@@ -10,6 +10,16 @@
     <style>
         body { background-color: #f8f9fa; }
         .card { box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        
+        /* Estilos para el scroll de notificaciones */
+        #notification-list {
+            max-height: 400px;
+            overflow-y: auto;
+            min-width: 350px; /* Ancho mínimo para que se vean bien */
+        }
+        .notification-item a {
+            white-space: normal; /* Permite que el texto se divida en varias líneas */
+        }
     </style>
 </head>
 <body>
@@ -39,6 +49,17 @@
                     <li class="nav-item"><a class="nav-link" href="{% url 'dashboard-comercializacion' %}"><i class="bi bi-graph-up-arrow"></i> Comercialización</a></li>
                     {% endif %}
                 </ul>
+
+                <div class="dropdown me-3">
+                    <a href="#" class="d-flex align-items-center text-white text-decoration-none position-relative" id="notificationsDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="bi bi-bell-fill fs-4"></i>
+                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger d-none" id="notification-count">
+                            </span>
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-dark dropdown-menu-end" aria-labelledby="notificationsDropdown" id="notification-list">
+                        <li><p class="dropdown-item disabled">Cargando notificaciones...</p></li>
+                    </ul>
+                </div>
                 <div class="dropdown">
                     <a href="#" class="d-flex align-items-center text-white text-decoration-none dropdown-toggle" data-bs-toggle="dropdown">
                         <i class="bi bi-person-circle fs-4 me-2"></i>
@@ -71,26 +92,7 @@
     </main>
     
     <div class="modal fade" id="confirmDeleteModal" tabindex="-1">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Confirmar Eliminación</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <p>¿Estás seguro de que quieres eliminar este elemento?</p>
-                    <p class="text-danger fw-bold">Esta acción no se puede deshacer.</p>
-                </div>
-                <div class="modal-footer">
-                    <form id="confirmDeleteForm" method="post">
-                        {% csrf_token %}
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                        <button type="submit" class="btn btn-danger">Sí, Eliminar</button>
-                    </form>
-                </div>
-            </div>
         </div>
-    </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     
@@ -107,6 +109,65 @@
     </script>
     
     {% block scripts %}
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const notificationCountBadge = document.getElementById('notification-count');
+        const notificationList = document.getElementById('notification-list');
+        const notificationsUrl = "{% url 'get-notifications-json' %}";
+
+        function fetchNotifications() {
+            fetch(notificationsUrl)
+                .then(response => response.json())
+                .then(data => {
+                    // Limpiar lista actual
+                    notificationList.innerHTML = '';
+
+                    // Actualizar el contador
+                    if (data.length > 0) {
+                        notificationCountBadge.textContent = data.length;
+                        notificationCountBadge.classList.remove('d-none');
+                    } else {
+                        notificationCountBadge.classList.add('d-none');
+                    }
+
+                    // Llenar la lista de notificaciones
+                    if (data.length === 0) {
+                        const noNotifItem = document.createElement('li');
+                        noNotifItem.innerHTML = `<p class="dropdown-item disabled text-white-50">No hay notificaciones nuevas.</p>`;
+                        notificationList.appendChild(noNotifItem);
+                    } else {
+                        data.forEach(notif => {
+                            const listItem = document.createElement('li');
+                            listItem.classList.add('notification-item');
+                            
+                            // Crear un enlace con la información
+                            const link = document.createElement('a');
+                            link.classList.add('dropdown-item');
+                            link.href = notif.url || '#';
+                            
+                            link.innerHTML = `
+                                <div class="fw-bold text-warning">${notif.area}</div>
+                                <div class="small">${notif.message}</div>
+                            `;
+                            
+                            listItem.appendChild(link);
+                            notificationList.appendChild(listItem);
+                        });
+                    }
+                })
+                .catch(error => {
+                    console.error('Error al obtener notificaciones:', error);
+                    notificationList.innerHTML = '<li><p class="dropdown-item disabled text-danger">Error al cargar.</p></li>';
+                });
+        }
+
+        // Llamar a la función al cargar la página
+        fetchNotifications();
+
+        // Establecer un intervalo para que se actualice cada 60 segundos (60000 milisegundos)
+        setInterval(fetchNotifications, 60000);
+    });
+    </script>
     {% endblock scripts %}
 
 </body>

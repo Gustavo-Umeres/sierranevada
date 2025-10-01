@@ -47,4 +47,6 @@ urlpatterns = [
     # Acciones comunes
     path('api/lote/<int:lote_id>/marcar_tarea/<str:tarea>/', views.marcar_tarea_json, name='marcar-tarea-json'),
     path('api/lote/<int:lote_id>/registrar_mortalidad/', views.registrar_mortalidad_json, name='registrar-mortalidad-json'),
+        path('api/notifications/', views.get_notifications_json, name='get-notifications-json'),
+
 ]

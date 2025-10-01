@@ -1,6 +1,8 @@
+
 from django.shortcuts import render, get_object_or_404
 from django.urls import reverse_lazy
-from django.db.models import F
+# MODIFIED LINE: Added Q, ExpressionWrapper, fields
+from django.db.models import F, Q, ExpressionWrapper, fields 
 from django.http import JsonResponse
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -8,9 +10,15 @@ from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView
 from django.utils import timezone
 from django.db import transaction
+from datetime import time, timedelta 
 
 from .models import Bastidor, Artesa, Jaula, Lote, RegistroDiario, RegistroMortalidad
-from .forms import BastidorForm, ArtesaForm, JaulaForm, LoteOvaCreateForm, RegistroMortalidadForm, LoteTallaForm, LotePesoForm
+from .forms import (
+    BastidorForm, ArtesaForm, JaulaForm, LoteOvaCreateForm, 
+    RegistroMortalidadForm, LoteTallaForm, LotePesoForm
+)
+
+
 
 class ProduccionPermissionMixin(LoginRequiredMixin, UserPassesTestMixin):
     def test_func(self):
@@ -429,3 +437,152 @@ def reasignar_engorde_json(request, lote_origen_id):
         
         return JsonResponse({'success': True, 'message': f'{cantidad} peces reasignados al lote {nuevo_lote.codigo_lote}.'})
     return JsonResponse({'error': 'Método no permitido'}, status=405)
+
+
+
+@login_required
+def get_notifications_json(request):
+    """
+    Genera y devuelve notificaciones relevantes para el usuario actual
+    basado en sus grupos y el estado del sistema.
+    """
+    notifications = []
+    now = timezone.now()
+    
+    # --- Notificaciones para el grupo de Producción ---
+    if request.user.groups.filter(name='Produccion').exists() or request.user.is_staff:
+        
+        # 1. Ovas que han superado los 15 días en el bastidor
+        lotes_ovas_vencidos = Lote.objects.filter(
+            etapa_actual='OVAS'
+        ).annotate(
+            dias_en_etapa=ExpressionWrapper(now.date() - F('fecha_ingreso_etapa'), output_field=fields.DurationField())
+        # --- MODIFIED LINE BELOW ---
+        ).filter(dias_en_etapa__gt=timedelta(days=15))
+        
+        for lote in lotes_ovas_vencidos:
+            notifications.append({
+                'area': 'Producción',
+                'message': f"El lote {lote.codigo_lote} en {lote.bastidor} ha superado los 15 días. Mover a artesa.",
+                'url': reverse_lazy('bastidor-list')
+            })
+
+        # 2. Alimentación olvidada después de las 8 PM
+        if now.time() >= time(20, 0): # Después de las 8:00 PM
+            # Obtenemos los lotes que NO tienen un registro de alimentación hoy
+            lotes_activos_sin_alimentar = Lote.objects.filter(
+                Q(etapa_actual='ALEVINES') | Q(etapa_actual='ENGORDE')
+            ).exclude(
+                registros_diarios__fecha=now.date(),
+                registros_diarios__alimentacion_realizada=True
+            )
+            
+            for lote in lotes_activos_sin_alimentar:
+                unidad = lote.artesa or lote.jaula
+                url = reverse_lazy('artesa-list') if lote.artesa else reverse_lazy('jaula-list')
+                notifications.append({
+                    'area': 'Producción',
+                    'message': f"Falta alimentar el lote {lote.codigo_lote} en {unidad}.",
+                    'url': url
+                })
+
+        # 3. Alevines listos para mover a jaula
+        alevines_listos = Lote.objects.filter(
+            etapa_actual='ALEVINES',
+            peso_promedio_pez_gr__gte=75,
+            talla_max_cm__gte=15
+        )
+        for lote in alevines_listos:
+            notifications.append({
+                'area': 'Producción',
+                'message': f"El lote {lote.codigo_lote} en {lote.artesa} está listo para engorde en jaula.",
+                'url': reverse_lazy('artesa-list')
+            })
+
+    # --- Notificaciones para el grupo de Comercialización (y Producción/Staff) ---
+    if request.user.groups.filter(name__in=['Comercializacion', 'Produccion']).exists() or request.user.is_staff:
+        
+        # 4. Lotes en engorde listos para la venta
+        lotes_para_venta = Lote.objects.filter(
+            etapa_actual='ENGORDE',
+            peso_promedio_pez_gr__gte=125,
+            talla_max_cm__gte=25
+        )
+        for lote in lotes_para_venta:
+            notifications.append({
+                'area': 'Producción',
+                'message': f"El lote {lote.codigo_lote} en {lote.jaula} está listo para la venta.",
+                'url': reverse_lazy('jaula-list')
+            })
+
+    return JsonResponse(notifications, safe=False)
+    """
+    Genera y devuelve notificaciones relevantes para el usuario actual
+    basado en sus grupos y el estado del sistema.
+    """
+    notifications = []
+    now = timezone.now()
+    
+    # --- Notificaciones para el grupo de Producción ---
+    if request.user.groups.filter(name='Produccion').exists() or request.user.is_staff:
+        
+        # 1. Ovas que han superado los 15 días en el bastidor
+        lotes_ovas_vencidos = Lote.objects.filter(
+            etapa_actual='OVAS'
+        ).annotate(
+            dias_en_etapa=ExpressionWrapper(now.date() - F('fecha_ingreso_etapa'), output_field=fields.DurationField())
+        ).filter(dias_en_etapa__days__gt=15)
+        
+        for lote in lotes_ovas_vencidos:
+            notifications.append({
+                'area': 'Producción',
+                'message': f"El lote {lote.codigo_lote} en {lote.bastidor} ha superado los 15 días. Mover a artesa.",
+                'url': reverse_lazy('bastidor-list')
+            })
+
+        # 2. Alimentación olvidada después de las 8 PM
+        if now.time() >= time(20, 0): # Después de las 8:00 PM
+            registros_hoy = RegistroDiario.objects.filter(fecha=now.date(), alimentacion_realizada=False)
+            lotes_sin_alimentar = Lote.objects.filter(
+                Q(etapa_actual='ALEVINES') | Q(etapa_actual='ENGORDE'),
+                registros_diarios__in=registros_hoy
+            )
+            for lote in lotes_sin_alimentar:
+                unidad = lote.artesa or lote.jaula
+                url = reverse_lazy('artesa-list') if lote.artesa else reverse_lazy('jaula-list')
+                notifications.append({
+                    'area': 'Producción',
+                    'message': f"Falta alimentar el lote {lote.codigo_lote} en {unidad}.",
+                    'url': url
+                })
+
+        # 3. Alevines listos para mover a jaula
+        alevines_listos = Lote.objects.filter(
+            etapa_actual='ALEVINES',
+            peso_promedio_pez_gr__gte=75,
+            talla_max_cm__gte=15
+        )
+        for lote in alevines_listos:
+            notifications.append({
+                'area': 'Producción',
+                'message': f"El lote {lote.codigo_lote} en {lote.artesa} está listo para engorde en jaula.",
+                'url': reverse_lazy('artesa-list')
+            })
+
+    # --- Notificaciones para el grupo de Comercialización (y Producción/Staff) ---
+    if request.user.groups.filter(name__in=['Comercializacion', 'Produccion']).exists() or request.user.is_staff:
+        
+        # 4. Lotes en engorde listos para la venta
+        lotes_para_venta = Lote.objects.filter(
+            etapa_actual='ENGORDE',
+            peso_promedio_pez_gr__gte=125,
+            talla_max_cm__gte=25
+        )
+        for lote in lotes_para_venta:
+            notifications.append({
+                'area': 'Comercialización',
+                'message': f"El lote {lote.codigo_lote} en {lote.jaula} está listo para la venta.",
+                'url': reverse_lazy('jaula-list')
+            })
+
+    return JsonResponse(notifications, safe=False)

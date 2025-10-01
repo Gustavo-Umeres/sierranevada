@@ -55,20 +55,104 @@
 
 <div class="modal fade" id="detailModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-header"><h5 class="modal-title" id="detailModalTitle">Detalle</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body" id="detailModalBody"></div></div></div></div>
 
+<div class="modal fade" id="moveLoteToJaulaModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Mover Alevines a Jaula</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="moveLoteToJaulaForm">
+                    <div id="jaulaListContainer" class="mb-3"></div>
+                    <div id="moveQuantityContainer" class="mb-3 d-none">
+                        <p>2. ¿Cuántos alevines deseas mover?</p>
+                        <input type="number" class="form-control" name="cantidad_a_mover" placeholder="Cantidad (dejar en blanco para mover todos)" min="1">
+                    </div>
+                    <div id="moveLoteToJaulaErrors" class="text-danger small"></div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="submit" form="moveLoteToJaulaForm" id="confirmMoveBtn" class="btn btn-primary d-none">Confirmar Movimiento</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="reallocateModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Reasignar Alevines</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="reallocateForm">
+                <div class="modal-body">
+                    <div class="mb-3" id="reallocateList"></div>
+                    <div class="mb-3">
+                        <label class="form-label">Cantidad a Mover</label>
+                        <input type="number" name="cantidad" class="form-control" required min="1" placeholder="N° de alevines a reasignar">
+                    </div>
+                    <div id="reallocateErrors" class="text-danger small"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Reasignar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="createJaulaModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Crear Nueva Jaula</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="createJaulaForm" action="{% url 'jaula-create' %}" method="post">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="id_codigo" class="form-label">Código de Jaula</label>
+                        <input type="text" name="codigo" class="form-control" required id="id_codigo">
+                    </div>
+                    <div class="mb-3">
+                        <label for="id_capacidad_maxima_unidades" class="form-label">Capacidad Máxima</label>
+                        <input type="number" name="capacidad_maxima_unidades" class="form-control" required id="id_capacidad_maxima_unidades">
+                    </div>
+                    <div id="createJaulaErrors" class="text-danger small"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Crear Jaula</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 {% endblock %}
 
 
 {% block scripts %}
-<script>
+{{ block.super }}  <script>
 document.addEventListener('DOMContentLoaded', function () {
+    // --- Inicialización de Modales ---
     const detailModalEl = document.getElementById('detailModal');
     if (!detailModalEl) return;
     const detailModal = new bootstrap.Modal(detailModalEl);
-    
-    // Se comentan los modals que no se van a usar para evitar errores
-    // const moveLoteToJaulaModal = new bootstrap.Modal(document.getElementById('moveLoteToJaulaModal'));
-    // const reallocateModal = new bootstrap.Modal(document.getElementById('reallocateModal'));
-    // const createJaulaModal = new bootstrap.Modal(document.getElementById('createJaulaModal'));
+
+    // Función auxiliar para inicializar modales solo si su HTML existe
+    const initModal = (id) => {
+        const el = document.getElementById(id);
+        return el ? new bootstrap.Modal(el) : null;
+    };
+
+    const moveLoteToJaulaModal = initModal('moveLoteToJaulaModal');
+    const reallocateModal = initModal('reallocateModal');
+    const createJaulaModal = initModal('createJaulaModal');
     
     const csrfToken = document.querySelector('input[name=csrfmiddlewaretoken]').value;
 
@@ -94,9 +178,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     }
                     
                     detailsList += `<li class="list-group-item d-flex justify-content-between align-items-center ps-0"><span><i class="bi bi-bounding-box-circles me-2 text-muted"></i>Capacidad Máxima</span><strong>${data.unidad.capacidad}</strong></li>`;
-                    
-                    // AQUÍ ESTÁ EL CAMBIO: Se ha comentado la línea que muestra "Alimento Diario"
-                    // detailsList += `<li class="list-group-item d-flex justify-content-between align-items-center ps-0"><span><i class="bi bi-egg-fried me-2 text-muted"></i>Alimento Diario</span><strong id="alimentoDiarioDisplay">${data.lote.alimento_diario} kg/día</strong></li>`;
+                    detailsList += `<li class="list-group-item d-flex justify-content-between align-items-center ps-0"><span><i class="bi bi-egg-fried me-2 text-muted"></i>Alimento Diario</span><strong id="alimentoDiarioDisplay">${data.lote.alimento_diario} kg/día</strong></li>`;
                     
                     content = `<div class="d-flex justify-content-between align-items-center"><h5 class="mb-0">Lote: ${data.lote.codigo}</h5><span class="badge bg-info-subtle text-info-emphasis rounded-pill">Días: ${dias}</span></div><hr class="my-3"><ul class="list-group list-group-flush mb-3">${detailsList}</ul>`;
                     
@@ -120,15 +202,12 @@ document.addEventListener('DOMContentLoaded', function () {
 
                     content += `<hr class="my-3"><form id="mortalidadForm" data-lote-id="${data.lote.id}" autocomplete="off" class="mb-3"><label class="form-label small">Registrar Bajas</label><div class="input-group"><span class="input-group-text"><i class="bi bi-heartbreak-fill"></i></span><input type="number" name="cantidad" class="form-control" placeholder="N° de muertos" required min="1"><button type="submit" class="btn btn-danger">Registrar</button></div><div id="mortalidadErrors" class="small mt-1"></div></form>`;
                     
-                    // Se comenta toda la sección de ACCIONES
-                    /*
                     content += `<div class="mt-4 text-center"><h6 class="text-muted small text-uppercase">Acciones</h6><div class="d-flex justify-content-center gap-3 mt-3"><div><button class="btn ${comidaClass} rounded-circle d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;" data-tarea="alimentacion" data-lote-id="${data.lote.id}" title="Alimentar"><i class="bi bi-tropical-fish fs-5"></i></button><div class="small mt-1">Alimentar</div></div><div><button class="btn ${limpiezaClass} rounded-circle d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;" data-tarea="limpieza" data-lote-id="${data.lote.id}" title="Limpiar"><i class="bi bi-snow fs-5"></i></button><div class="small mt-1">Limpiar</div></div>`;
                     if (data.lote.talla_max_cm && data.lote.talla_max_cm >= 15) {
                         content += `<div><button class="btn btn-primary rounded-circle d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;" id="openMoveToJaulaBtn" data-lote-id="${data.lote.id}" title="Mover a Jaula"><i class="bi bi-arrows-move fs-5"></i></button><div class="small mt-1">Mover</div></div>`;
                     }
                     content += `<div><button class="btn btn-warning rounded-circle d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;" id="openReallocateBtn" data-lote-id="${data.lote.id}" title="Reasignar Alevines"><i class="bi bi-distribute-vertical fs-5"></i></button><div class="small mt-1">Reasignar</div></div>`;
                     content += `</div></div>`;
-                    */
 
                 } else {
                     content = `<div class="text-center p-3"><p class="lead">Esta unidad está disponible.</p></div>`;
@@ -145,8 +224,6 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
-    // La función para obtener jaulas se comenta porque el botón que la llama no existe
-    /*
     function fetchAndDisplayJaulas(loteId) {
         const jaulaContainer = document.getElementById('jaulaListContainer');
         jaulaContainer.innerHTML = '<p>Buscando jaulas aptas...</p>';
@@ -165,13 +242,11 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
             });
     }
-    */
 
     document.body.addEventListener('click', function(event) {
         const button = event.target.closest('button');
         if (!button) return;
 
-        // La lógica para marcar tareas se mantiene por si se descomentan los botones en el futuro
         const tareaButton = button.closest('[data-tarea]');
         if (tareaButton) {
             const loteId = tareaButton.dataset.loteId;
@@ -189,9 +264,7 @@ document.addEventListener('DOMContentLoaded', function () {
             document.getElementById('pesoForm').classList.remove('d-none');
         }
         
-        // Se comentan los manejadores de eventos para los botones de las funcionalidades avanzadas
-        /*
-        if (button.id === 'openMoveToJaulaBtn') {
+        if (button.id === 'openMoveToJaulaBtn' && moveLoteToJaulaModal) {
             const loteId = button.dataset.loteId;
             document.getElementById('moveLoteToJaulaForm').dataset.loteId = loteId;
             document.getElementById('moveQuantityContainer').classList.add('d-none');
@@ -200,22 +273,13 @@ document.addEventListener('DOMContentLoaded', function () {
             moveLoteToJaulaModal.show();
             fetchAndDisplayJaulas(loteId);
         }
-        const moveJaulaTarget = button.closest('.move-lote-to-jaula-target');
-        if (moveJaulaTarget) {
-            const loteId = moveJaulaTarget.dataset.loteId;
-            const jaulaId = moveJaulaTarget.dataset.jaulaId;
-            if (confirm('¿Mover este lote a la jaula seleccionada?')) {
-                fetch(`/produccion/api/lote/${loteId}/mover_a_jaula/${jaulaId}/`, { method: 'POST', headers: {'X-CSRFToken': csrfToken} })
-                .then(response => response.json())
-                .then(data => { if (data.success) { alert(data.message); window.location.reload(); } else { alert('Error: ' + data.error); } });
-            }
-        }
-        if (button.id === 'openCreateJaulaBtn') {
+        
+        if (button.id === 'openCreateJaulaBtn' && createJaulaModal) {
             document.getElementById('createJaulaForm').reset();
-            moveLoteToJaulaModal.hide();
+            if (moveLoteToJaulaModal) moveLoteToJaulaModal.hide();
             createJaulaModal.show();
         }
-        if (button.id === 'openReallocateBtn') {
+        if (button.id === 'openReallocateBtn' && reallocateModal) {
             const loteId = button.dataset.loteId;
             const reallocateList = document.getElementById('reallocateList');
             reallocateList.innerHTML = '<p>Buscando artesas...</p>';
@@ -233,23 +297,19 @@ document.addEventListener('DOMContentLoaded', function () {
                     } else { reallocateList.innerHTML = '<div class="alert alert-warning">No hay otras artesas disponibles.</div>'; }
                 });
         }
-        */
     });
 
-    // Se comenta el listener para el cambio de selección de jaula
-    /*
     document.body.addEventListener('change', function(event) {
         if (event.target.name === 'jaula_destino') {
             document.getElementById('moveQuantityContainer').classList.remove('d-none');
             document.getElementById('confirmMoveBtn').classList.remove('d-none');
         }
     });
-    */
 
     document.body.addEventListener('submit', function(event) {
-        if (event.target.id === 'tallaForm' || event.target.id === 'pesoForm') {
+        const form = event.target;
+        if (form.id === 'tallaForm' || form.id === 'pesoForm') {
             event.preventDefault();
-            const form = event.target;
             const loteId = form.dataset.loteId;
             const formData = new FormData(form);
             const isPesoForm = form.id === 'pesoForm';
@@ -258,21 +318,17 @@ document.addEventListener('DOMContentLoaded', function () {
             .then(response => response.json())
             .then(data => {
                 if(data.success) {
-                    const unidadId = detailModalEl.dataset.unidadId;
-                    refreshModalContent(unidadId);
+                    refreshModalContent(detailModalEl.dataset.unidadId);
                 } else {
                     const errorDiv = form.querySelector('.text-danger');
                     if (errorDiv) errorDiv.textContent = data.error || 'Error al guardar.';
                 }
             });
         }
-        if (event.target.id === 'mortalidadForm') {
+        if (form.id === 'mortalidadForm') {
             event.preventDefault();
-            const form = event.target;
             const loteId = form.getAttribute('data-lote-id');
             const errorDiv = form.querySelector('#mortalidadErrors');
-            const cantidadSpan = document.getElementById('loteCantidad');
-            const alimentoSpan = document.getElementById('alimentoDiarioDisplay');
             const formData = new FormData(form);
             fetch(`/produccion/api/lote/${loteId}/registrar_mortalidad/`, { method: 'POST', body: formData, headers: {'X-CSRFToken': csrfToken} })
                 .then(response => response.json())
@@ -289,11 +345,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 .catch(error => { errorDiv.textContent = 'Error de conexión.'; });
         }
         
-        // Se comenta el listener para el envío del formulario de mover lote
-        /*
-        if (event.target.id === 'moveLoteToJaulaForm') {
+        if (form.id === 'moveLoteToJaulaForm') {
             event.preventDefault();
-            const form = event.target;
             const loteId = form.dataset.loteId;
             const formData = new FormData(form);
             const errorDiv = document.getElementById('moveLoteToJaulaErrors');
@@ -305,39 +358,35 @@ document.addEventListener('DOMContentLoaded', function () {
                 else { errorDiv.textContent = data.error || 'Ocurrió un error.'; }
             });
         }
-        */
-    });
-    
-    // Se comentan los listeners de los formularios avanzados
-    /*
-    document.getElementById('createJaulaForm').addEventListener('submit', function(event){
-        event.preventDefault();
-        const loteId = document.getElementById('moveLoteToJaulaForm').dataset.loteId;
-        const errorDiv = document.getElementById('createJaulaErrors');
-        errorDiv.textContent = '';
-        fetch('{% url "jaula-create" %}', {
-            method: 'POST', body: new FormData(this), headers: {'X-CSRFToken': csrfToken}
-        }).then(response => {
-            if (response.ok) {
-                createJaulaModal.hide();
-                moveLoteToJaulaModal.show();
-                fetchAndDisplayJaulas(loteId);
-            } else {
-                errorDiv.textContent = 'Error al crear la jaula.';
-            }
-        });
-    });
 
-    document.getElementById('reallocateForm').addEventListener('submit', function(event){
-        event.preventDefault();
-        const loteId = this.dataset.loteId;
-        const formData = new FormData(this);
-        const errorDiv = document.getElementById('reallocateErrors');
-        fetch(`/produccion/api/lote/${loteId}/reasignar_alevines/`, { method: 'POST', body: formData, headers: {'X-CSRFToken': csrfToken} })
-        .then(response => response.json())
-        .then(data => { if (data.success) { alert(data.message); window.location.reload(); } else { errorDiv.textContent = data.error; } });
+        if (form.id === 'createJaulaForm'){
+            event.preventDefault();
+            const loteId = document.getElementById('moveLoteToJaulaForm').dataset.loteId;
+            const errorDiv = document.getElementById('createJaulaErrors');
+            errorDiv.textContent = '';
+            fetch(form.action, {
+                method: 'POST', body: new FormData(form), headers: {'X-CSRFToken': csrfToken, 'X-Requested-With': 'XMLHttpRequest'}
+            }).then(response => response.json()).then(data => {
+                if (data.success) {
+                    if(createJaulaModal) createJaulaModal.hide();
+                    if(moveLoteToJaulaModal) moveLoteToJaulaModal.show();
+                    fetchAndDisplayJaulas(loteId);
+                } else {
+                    errorDiv.textContent = data.error || 'Error al crear la jaula.';
+                }
+            });
+        }
+
+        if (form.id === 'reallocateForm'){
+            event.preventDefault();
+            const loteId = form.dataset.loteId;
+            const formData = new FormData(form);
+            const errorDiv = document.getElementById('reallocateErrors');
+            fetch(`/produccion/api/lote/${loteId}/reasignar_alevines/`, { method: 'POST', body: formData, headers: {'X-CSRFToken': csrfToken} })
+            .then(response => response.json())
+            .then(data => { if (data.success) { alert(data.message); window.location.reload(); } else { errorDiv.textContent = data.error; } });
+        }
     });
-    */
 });
 </script>
 {% endblock scripts %}
