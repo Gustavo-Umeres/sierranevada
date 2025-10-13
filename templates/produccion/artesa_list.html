@@ -202,6 +202,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
                     content += `<hr class="my-3"><form id="mortalidadForm" data-lote-id="${data.lote.id}" autocomplete="off" class="mb-3"><label class="form-label small">Registrar Bajas</label><div class="input-group"><span class="input-group-text"><i class="bi bi-heartbreak-fill"></i></span><input type="number" name="cantidad" class="form-control" placeholder="N° de muertos" required min="1"><button type="submit" class="btn btn-danger">Registrar</button></div><div id="mortalidadErrors" class="small mt-1"></div></form>`;
                     
+                    // Formulario de alimentación detallada
+                    content += `<hr class="my-3"><div id="alimentacionSection" class="mb-3"><h6>Registro de Alimentación</h6><form id="alimentacionForm" data-lote-id="${data.lote.id}" autocomplete="off" class="mb-3"><input type="hidden" name="lote" value="${data.lote.id}"><div class="row g-2"><div class="col-md-4"><label class="form-label small">Fecha</label><input type="date" name="fecha" class="form-control" value="${new Date().toISOString().split('T')[0]}" required></div><div class="col-md-4"><label class="form-label small">Hora</label><input type="time" name="hora" class="form-control" value="${new Date().toTimeString().slice(0,5)}" required></div><div class="col-md-4"><label class="form-label small">Cantidad (g)</label><input type="number" step="0.1" name="cantidad_alimento_gr" class="form-control" placeholder="Gramos" required min="0.1"></div><div class="col-md-6"><label class="form-label small">Tipo de Alimento</label><input type="text" name="tipo_alimento" class="form-control" placeholder="Ej: Pellets 2mm" required></div><div class="col-md-6"><label class="form-label small">Observaciones</label><input type="text" name="observaciones" class="form-control" placeholder="Opcional"></div><div class="col-12"><button type="submit" class="btn btn-success w-100"><i class="bi bi-tropical-fish me-2"></i>Registrar Alimentación</button></div></div><div id="alimentacionErrors" class="small mt-1"></div></form></div>`;
+                    
                     content += `<div class="mt-4 text-center"><h6 class="text-muted small text-uppercase">Acciones</h6><div class="d-flex justify-content-center gap-3 mt-3"><div><button class="btn ${comidaClass} rounded-circle d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;" data-tarea="alimentacion" data-lote-id="${data.lote.id}" title="Alimentar"><i class="bi bi-tropical-fish fs-5"></i></button><div class="small mt-1">Alimentar</div></div><div><button class="btn ${limpiezaClass} rounded-circle d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;" data-tarea="limpieza" data-lote-id="${data.lote.id}" title="Limpiar"><i class="bi bi-snow fs-5"></i></button><div class="small mt-1">Limpiar</div></div>`;
                     if (data.lote.talla_max_cm && data.lote.talla_max_cm >= 15) {
                         content += `<div><button class="btn btn-primary rounded-circle d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;" id="openMoveToJaulaBtn" data-lote-id="${data.lote.id}" title="Mover a Jaula"><i class="bi bi-arrows-move fs-5"></i></button><div class="small mt-1">Mover</div></div>`;
@@ -385,6 +388,42 @@ document.addEventListener('DOMContentLoaded', function () {
             fetch(`/produccion/api/lote/${loteId}/reasignar_alevines/`, { method: 'POST', body: formData, headers: {'X-CSRFToken': csrfToken} })
             .then(response => response.json())
             .then(data => { if (data.success) { alert(data.message); window.location.reload(); } else { errorDiv.textContent = data.error; } });
+        }
+        
+        if (form.id === 'alimentacionForm'){
+            event.preventDefault();
+            const loteId = form.dataset.loteId;
+            const formData = new FormData(form);
+            const errorDiv = document.getElementById('alimentacionErrors');
+            errorDiv.innerHTML = '';
+            
+            fetch(`/produccion/api/lote/${loteId}/registrar_alimentacion/`, { 
+                method: 'POST', 
+                body: formData, 
+                headers: {'X-CSRFToken': csrfToken} 
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Mostrar mensaje de éxito
+                    errorDiv.innerHTML = `<span class="text-success small">✓ ${data.message}</span>`;
+                    // Limpiar formulario
+                    form.reset();
+                    // Actualizar el estado de alimentación en el botón
+                    const alimentacionBtn = document.querySelector(`[data-tarea="alimentacion"][data-lote-id="${loteId}"]`);
+                    if (alimentacionBtn) {
+                        alimentacionBtn.classList.remove('btn-outline-secondary');
+                        alimentacionBtn.classList.add('btn-success');
+                    }
+                    // Limpiar mensaje después de 3 segundos
+                    setTimeout(() => { errorDiv.innerHTML = ''; }, 3000);
+                } else {
+                    errorDiv.innerHTML = `<span class="text-danger small">${data.error || 'Error al registrar alimentación'}</span>`;
+                }
+            })
+            .catch(error => {
+                errorDiv.innerHTML = `<span class="text-danger small">Error de conexión</span>`;
+            });
         }
     });
 });

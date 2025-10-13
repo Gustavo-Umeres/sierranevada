@@ -133,3 +133,32 @@ class RegistroMortalidad(models.Model):
     cantidad = models.PositiveIntegerField()
     registrado_por = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
     def __str__(self): return f"{self.cantidad} bajas en {self.lote.codigo_lote} el {self.fecha}"
+
+class Alimentacion(models.Model):
+    """
+    Modelo para registrar la alimentación detallada de larvas y peces.
+    Permite llevar un historial completo de cuánto y cuándo se ha alimentado cada lote.
+    """
+    lote = models.ForeignKey(Lote, on_delete=models.CASCADE, related_name='registros_alimentacion')
+    fecha = models.DateField(default=timezone.now)
+    hora = models.TimeField(default=timezone.now)
+    cantidad_alimento_gr = models.FloatField(help_text="Cantidad de alimento administrado en gramos")
+    tipo_alimento = models.CharField(max_length=100, help_text="Tipo de alimento utilizado")
+    observaciones = models.TextField(blank=True, help_text="Observaciones adicionales sobre la alimentación")
+    registrado_por = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
+    fecha_registro = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        ordering = ['-fecha', '-hora']
+        verbose_name = 'Registro de Alimentación'
+        verbose_name_plural = 'Registros de Alimentación'
+    
+    def __str__(self):
+        return f"Alimentación de {self.lote.codigo_lote} - {self.fecha} {self.hora}"
+    
+    def save(self, *args, **kwargs):
+        # Actualizar el registro diario correspondiente
+        registro_diario, created = self.lote.registros_diarios.get_or_create(fecha=self.fecha)
+        registro_diario.alimentacion_realizada = True
+        registro_diario.save()
+        super().save(*args, **kwargs)

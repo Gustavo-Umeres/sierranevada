@@ -1,0 +1,289 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4 border-bottom pb-3">
+    <h1 class="h2">
+        <i class="bi bi-clock-history me-2"></i>Historial de Alimentación
+    </h1>
+    <div>
+        <a href="{% url 'alimentacion-create' %}?lote={{ lote.id }}" class="btn btn-primary me-2">
+            <i class="bi bi-plus-circle me-2"></i>Nuevo Registro
+        </a>
+        <a href="{% url 'alimentacion-list' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-2"></i>Volver al Listado
+        </a>
+    </div>
+</div>
+
+<!-- Información del lote -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="card-title mb-0">
+            <i class="bi bi-info-circle me-2"></i>Información del Lote
+        </h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-3">
+                <strong>Código:</strong><br>
+                <span class="text-primary fs-5">{{ lote.codigo_lote }}</span>
+            </div>
+            <div class="col-md-3">
+                <strong>Etapa:</strong><br>
+                <span class="badge bg-info">{{ lote.get_etapa_actual_display }}</span>
+            </div>
+            <div class="col-md-3">
+                <strong>Cantidad de Peces:</strong><br>
+                <span class="fs-5">{{ lote.cantidad_total_peces }}</span>
+            </div>
+            <div class="col-md-3">
+                <strong>Unidad:</strong><br>
+                {% if lote.artesa %}
+                    <span class="text-success">{{ lote.artesa.codigo }}</span>
+                {% elif lote.jaula %}
+                    <span class="text-success">{{ lote.jaula.codigo }}</span>
+                {% else %}
+                    <span class="text-muted">Sin asignar</span>
+                {% endif %}
+            </div>
+        </div>
+        
+        {% if lote.peso_promedio_pez_gr %}
+        <div class="row mt-3">
+            <div class="col-md-4">
+                <strong>Peso Promedio:</strong><br>
+                <span class="fs-5">{{ lote.peso_promedio_pez_gr|floatformat:1 }}g</span>
+            </div>
+            <div class="col-md-4">
+                <strong>Biomasa Total:</strong><br>
+                <span class="fs-5 text-primary">{{ lote.biomasa_kg|floatformat:2 }} kg</span>
+            </div>
+            <div class="col-md-4">
+                <strong>Alimento Diario Recomendado:</strong><br>
+                <span class="fs-5 text-success">{{ lote.cantidad_alimento_diario_gr|floatformat:1 }}g</span>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Estadísticas de alimentación -->
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="bi bi-list-check display-4 text-primary"></i>
+                <h3 class="mt-2">{{ total_alimentaciones }}</h3>
+                <p class="text-muted mb-0">Total de Alimentaciones</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="bi bi-stack display-4 text-success"></i>
+                <h3 class="mt-2">{{ total_alimento_gr|floatformat:1 }}g</h3>
+                <p class="text-muted mb-0">Total de Alimento</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="bi bi-graph-up display-4 text-info"></i>
+                <h3 class="mt-2">{{ promedio_diario|floatformat:1 }}g</h3>
+                <p class="text-muted mb-0">Promedio Diario</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Historial detallado -->
+<div class="card">
+    <div class="card-header">
+        <h5 class="card-title mb-0">
+            <i class="bi bi-clock-history me-2"></i>Registros de Alimentación
+        </h5>
+    </div>
+    <div class="card-body p-0">
+        {% if registros %}
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Hora</th>
+                            <th>Cantidad (g)</th>
+                            <th>Tipo de Alimento</th>
+                            <th>Registrado por</th>
+                            <th>Observaciones</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for registro in registros %}
+                        <tr>
+                            <td>
+                                <span class="fw-medium">{{ registro.fecha|date:"d/m/Y" }}</span>
+                            </td>
+                            <td>{{ registro.hora|time:"H:i" }}</td>
+                            <td>
+                                <span class="badge bg-primary fs-6">{{ registro.cantidad_alimento_gr|floatformat:1 }}g</span>
+                            </td>
+                            <td>
+                                <span class="fw-medium">{{ registro.tipo_alimento }}</span>
+                            </td>
+                            <td>
+                                <small>{{ registro.registrado_por.get_full_name|default:registro.registrado_por.username }}</small>
+                            </td>
+                            <td>
+                                {% if registro.observaciones %}
+                                    <span class="text-muted" title="{{ registro.observaciones }}">
+                                        {{ registro.observaciones|truncatechars:40 }}
+                                    </span>
+                                {% else %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="btn-group" role="group">
+                                    <a href="{% url 'alimentacion-update' registro.pk %}" 
+                                       class="btn btn-sm btn-outline-primary" title="Editar">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    <button type="button" class="btn btn-sm btn-outline-danger" title="Eliminar"
+                                            data-bs-toggle="modal" data-bs-target="#confirmDeleteModal"
+                                            data-form-url="{% url 'alimentacion-delete' registro.pk %}">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="text-center py-5">
+                <i class="bi bi-inbox display-1 text-muted"></i>
+                <h4 class="text-muted mt-3">No hay registros de alimentación</h4>
+                <p class="text-muted">Este lote aún no tiene registros de alimentación.</p>
+                <a href="{% url 'alimentacion-create' %}?lote={{ lote.id }}" class="btn btn-primary">
+                    <i class="bi bi-plus-circle me-2"></i>Registrar Primera Alimentación
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Gráfico de tendencias (opcional) -->
+{% if registros %}
+<div class="card mt-4">
+    <div class="card-header">
+        <h5 class="card-title mb-0">
+            <i class="bi bi-graph-up me-2"></i>Tendencia de Alimentación
+        </h5>
+    </div>
+    <div class="card-body">
+        <canvas id="alimentacionChart" width="400" height="100"></canvas>
+    </div>
+</div>
+{% endif %}
+
+<!-- Modal de confirmación de eliminación -->
+<div class="modal fade" id="confirmDeleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirmar Eliminación</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>¿Estás seguro de que deseas eliminar este registro de alimentación?</p>
+                <p class="text-muted small">Esta acción no se puede deshacer.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <form id="confirmDeleteForm" method="post" style="display: inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">Eliminar</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+{{ block.super }}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Modal de confirmación
+    const confirmDeleteModalEl = document.getElementById('confirmDeleteModal');
+    if (confirmDeleteModalEl) {
+        confirmDeleteModalEl.addEventListener('show.bs.modal', event => {
+            const button = event.relatedTarget;
+            const formUrl = button.getAttribute('data-form-url');
+            const form = confirmDeleteModalEl.querySelector('#confirmDeleteForm');
+            form.action = formUrl;
+        });
+    }
+    
+    // Gráfico de tendencias
+    {% if registros %}
+    const ctx = document.getElementById('alimentacionChart');
+    if (ctx) {
+        const registrosData = [
+            {% for registro in registros reversed %}
+            {
+                fecha: '{{ registro.fecha|date:"d/m" }}',
+                cantidad: {{ registro.cantidad_alimento_gr }}
+            }{% if not forloop.last %},{% endif %}
+            {% endfor %}
+        ];
+        
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: registrosData.map(r => r.fecha),
+                datasets: [{
+                    label: 'Cantidad de Alimento (g)',
+                    data: registrosData.map(r => r.cantidad),
+                    borderColor: 'rgb(75, 192, 192)',
+                    backgroundColor: 'rgba(75, 192, 192, 0.1)',
+                    tension: 0.1,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Gramos'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Fecha'
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top'
+                    }
+                }
+            }
+        });
+    }
+    {% endif %}
+});
+</script>
+{% endblock %}

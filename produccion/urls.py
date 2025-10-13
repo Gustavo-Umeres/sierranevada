@@ -47,6 +47,17 @@ urlpatterns = [
     # Acciones comunes
     path('api/lote/<int:lote_id>/marcar_tarea/<str:tarea>/', views.marcar_tarea_json, name='marcar-tarea-json'),
     path('api/lote/<int:lote_id>/registrar_mortalidad/', views.registrar_mortalidad_json, name='registrar-mortalidad-json'),
-        path('api/notifications/', views.get_notifications_json, name='get-notifications-json'),
+    path('api/notifications/', views.get_notifications_json, name='get-notifications-json'),
+    
+    # URLs para Control de Alimentación
+    path('alimentacion/', views.AlimentacionListView.as_view(), name='alimentacion-list'),
+    path('alimentacion/nuevo/', views.AlimentacionCreateView.as_view(), name='alimentacion-create'),
+    path('alimentacion/<int:pk>/editar/', views.AlimentacionUpdateView.as_view(), name='alimentacion-update'),
+    path('alimentacion/<int:pk>/eliminar/', views.AlimentacionDeleteView.as_view(), name='alimentacion-delete'),
+    path('alimentacion/lote/<int:lote_id>/', views.alimentacion_lote_detail, name='alimentacion-lote-detail'),
+    
+    # APIs para alimentación
+    path('api/lote/<int:lote_id>/registrar_alimentacion/', views.registrar_alimentacion_json, name='registrar-alimentacion-json'),
+    path('api/lote/<int:lote_id>/historial_alimentacion/', views.historial_alimentacion_json, name='historial-alimentacion-json'),
 
 ]

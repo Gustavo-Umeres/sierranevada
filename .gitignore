@@ -1,0 +1,15 @@
+deb.sqlite3
+
+.env
+venv/
+env/
+ENV/
+.venv/
+*.env
+
+sierra_nevada/settings.py
+
+produccion/__pycache__/
+logistica/__pycache__/
+comercializacion/__pycache__/
+usuarios/__pycache__/

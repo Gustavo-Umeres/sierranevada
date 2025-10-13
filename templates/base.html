@@ -38,7 +38,19 @@
                     {% endif %}
 
                     {% if user|has_group:"Produccion" %}
-                    <li class="nav-item"><a class="nav-link" href="{% url 'dashboard-produccion' %}"><i class="bi bi-water"></i> Producción</a></li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                            <i class="bi bi-water"></i> Producción
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="{% url 'dashboard-produccion' %}"><i class="bi bi-speedometer2 me-2"></i>Dashboard</a></li>
+                            <li><a class="dropdown-item" href="{% url 'alimentacion-list' %}"><i class="bi bi-tropical-fish me-2"></i>Control de Alimentación</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{% url 'bastidor-list' %}"><i class="bi bi-egg me-2"></i>Ovas (Bastidores)</a></li>
+                            <li><a class="dropdown-item" href="{% url 'artesa-list' %}"><i class="bi bi-droplet me-2"></i>Alevines (Artesas)</a></li>
+                            <li><a class="dropdown-item" href="{% url 'jaula-list' %}"><i class="bi bi-box me-2"></i>Engorde (Jaulas)</a></li>
+                        </ul>
+                    </li>
                     {% endif %}
 
                     {% if user|has_group:"Logistica" %}

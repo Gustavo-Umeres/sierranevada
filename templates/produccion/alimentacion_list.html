@@ -1,0 +1,214 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4 border-bottom pb-3">
+    <h1 class="h2">Control de Alimentación</h1>
+    <a href="{% url 'alimentacion-create' %}" class="btn btn-primary">
+        <i class="bi bi-plus-circle me-2"></i>Registrar Alimentación
+    </a>
+</div>
+
+<!-- Filtros -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="card-title mb-0">
+            <i class="bi bi-funnel me-2"></i>Filtros
+        </h5>
+    </div>
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-4">
+                <label for="lote" class="form-label">Lote</label>
+                <select name="lote" id="lote" class="form-select">
+                    <option value="">Todos los lotes</option>
+                    {% for lote in lotes %}
+                        <option value="{{ lote.id }}" {% if lote.id|stringformat:"s" == lote_seleccionado %}selected{% endif %}>
+                            {{ lote.codigo_lote }} - {{ lote.get_etapa_actual_display }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="fecha_desde" class="form-label">Fecha Desde</label>
+                <input type="date" name="fecha_desde" id="fecha_desde" class="form-control" value="{{ fecha_desde }}">
+            </div>
+            <div class="col-md-3">
+                <label for="fecha_hasta" class="form-label">Fecha Hasta</label>
+                <input type="date" name="fecha_hasta" id="fecha_hasta" class="form-control" value="{{ fecha_hasta }}">
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+                <button type="submit" class="btn btn-outline-primary me-2">
+                    <i class="bi bi-search"></i> Filtrar
+                </button>
+                <a href="{% url 'alimentacion-list' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-x-circle"></i> Limpiar
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Lista de registros -->
+<div class="card">
+    <div class="card-header">
+        <h5 class="card-title mb-0">
+            <i class="bi bi-list-ul me-2"></i>Registros de Alimentación
+        </h5>
+    </div>
+    <div class="card-body p-0">
+        {% if registros_alimentacion %}
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Hora</th>
+                            <th>Lote</th>
+                            <th>Cantidad (g)</th>
+                            <th>Tipo de Alimento</th>
+                            <th>Registrado por</th>
+                            <th>Observaciones</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for registro in registros_alimentacion %}
+                        <tr>
+                            <td>{{ registro.fecha|date:"d/m/Y" }}</td>
+                            <td>{{ registro.hora|time:"H:i" }}</td>
+                            <td>
+                                <a href="{% url 'alimentacion-lote-detail' registro.lote.id %}" class="text-decoration-none">
+                                    {{ registro.lote.codigo_lote }}
+                                </a>
+                                <br>
+                                <small class="text-muted">{{ registro.lote.get_etapa_actual_display }}</small>
+                            </td>
+                            <td>
+                                <span class="badge bg-primary">{{ registro.cantidad_alimento_gr|floatformat:1 }}g</span>
+                            </td>
+                            <td>{{ registro.tipo_alimento }}</td>
+                            <td>
+                                <small>{{ registro.registrado_por.get_full_name|default:registro.registrado_por.username }}</small>
+                            </td>
+                            <td>
+                                {% if registro.observaciones %}
+                                    <span class="text-muted" title="{{ registro.observaciones }}">
+                                        {{ registro.observaciones|truncatechars:30 }}
+                                    </span>
+                                {% else %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="btn-group" role="group">
+                                    <a href="{% url 'alimentacion-update' registro.pk %}" 
+                                       class="btn btn-sm btn-outline-primary" title="Editar">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    <button type="button" class="btn btn-sm btn-outline-danger" title="Eliminar"
+                                            data-bs-toggle="modal" data-bs-target="#confirmDeleteModal"
+                                            data-form-url="{% url 'alimentacion-delete' registro.pk %}">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Paginación -->
+            {% if is_paginated %}
+                <div class="card-footer">
+                    <nav aria-label="Paginación de registros">
+                        <ul class="pagination pagination-sm justify-content-center mb-0">
+                            {% if page_obj.has_previous %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page=1{% if lote_seleccionado %}&lote={{ lote_seleccionado }}{% endif %}{% if fecha_desde %}&fecha_desde={{ fecha_desde }}{% endif %}{% if fecha_hasta %}&fecha_hasta={{ fecha_hasta }}{% endif %}">
+                                        Primera
+                                    </a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if lote_seleccionado %}&lote={{ lote_seleccionado }}{% endif %}{% if fecha_desde %}&fecha_desde={{ fecha_desde }}{% endif %}{% if fecha_hasta %}&fecha_hasta={{ fecha_hasta }}{% endif %}">
+                                        Anterior
+                                    </a>
+                                </li>
+                            {% endif %}
+                            
+                            <li class="page-item active">
+                                <span class="page-link">
+                                    Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
+                                </span>
+                            </li>
+                            
+                            {% if page_obj.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if lote_seleccionado %}&lote={{ lote_seleccionado }}{% endif %}{% if fecha_desde %}&fecha_desde={{ fecha_desde }}{% endif %}{% if fecha_hasta %}&fecha_hasta={{ fecha_hasta }}{% endif %}">
+                                        Siguiente
+                                    </a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if lote_seleccionado %}&lote={{ lote_seleccionado }}{% endif %}{% if fecha_desde %}&fecha_desde={{ fecha_desde }}{% endif %}{% if fecha_hasta %}&fecha_hasta={{ fecha_hasta }}{% endif %}">
+                                        Última
+                                    </a>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                </div>
+            {% endif %}
+        {% else %}
+            <div class="text-center py-5">
+                <i class="bi bi-inbox display-1 text-muted"></i>
+                <h4 class="text-muted mt-3">No hay registros de alimentación</h4>
+                <p class="text-muted">Comienza registrando la primera alimentación.</p>
+                <a href="{% url 'alimentacion-create' %}" class="btn btn-primary">
+                    <i class="bi bi-plus-circle me-2"></i>Registrar Primera Alimentación
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Modal de confirmación de eliminación -->
+<div class="modal fade" id="confirmDeleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirmar Eliminación</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>¿Estás seguro de que deseas eliminar este registro de alimentación?</p>
+                <p class="text-muted small">Esta acción no se puede deshacer.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <form id="confirmDeleteForm" method="post" style="display: inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">Eliminar</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+{{ block.super }}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const confirmDeleteModalEl = document.getElementById('confirmDeleteModal');
+    if (confirmDeleteModalEl) {
+        confirmDeleteModalEl.addEventListener('show.bs.modal', event => {
+            const button = event.relatedTarget;
+            const formUrl = button.getAttribute('data-form-url');
+            const form = confirmDeleteModalEl.querySelector('#confirmDeleteForm');
+            form.action = formUrl;
+        });
+    }
+});
+</script>
+{% endblock %}

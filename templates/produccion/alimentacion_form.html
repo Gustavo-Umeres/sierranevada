@@ -1,0 +1,218 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4 border-bottom pb-3">
+    <h1 class="h2">
+        {% if object %}
+            <i class="bi bi-pencil-square me-2"></i>Editar Registro de Alimentación
+        {% else %}
+            <i class="bi bi-plus-circle me-2"></i>Registrar Alimentación
+        {% endif %}
+    </h1>
+    <a href="{% url 'alimentacion-list' %}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left me-2"></i>Volver al Listado
+    </a>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-info-circle me-2"></i>Información del Registro
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="{{ form.lote.id_for_label }}" class="form-label">
+                                {{ form.lote.label }} <span class="text-danger">*</span>
+                            </label>
+                            <select name="{{ form.lote.name }}" id="{{ form.lote.id_for_label }}" class="form-select" required>
+                                <option value="">Selecciona un lote</option>
+                                {% for lote in lotes %}
+                                    <option value="{{ lote.id }}" {% if form.lote.value == lote.id %}selected{% endif %}>
+                                        {{ lote.codigo_lote }} - {{ lote.get_etapa_actual_display }}
+                                        {% if lote.artesa %}
+                                            ({{ lote.artesa.codigo }})
+                                        {% elif lote.jaula %}
+                                            ({{ lote.jaula.codigo }})
+                                        {% endif %}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                            {% if form.lote.errors %}
+                                <div class="text-danger small mt-1">
+                                    {% for error in form.lote.errors %}
+                                        <div>{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="col-md-3">
+                            <label for="{{ form.fecha.id_for_label }}" class="form-label">
+                                {{ form.fecha.label }} <span class="text-danger">*</span>
+                            </label>
+                            {{ form.fecha }}
+                            {% if form.fecha.errors %}
+                                <div class="text-danger small mt-1">
+                                    {% for error in form.fecha.errors %}
+                                        <div>{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="col-md-3">
+                            <label for="{{ form.hora.id_for_label }}" class="form-label">
+                                {{ form.hora.label }} <span class="text-danger">*</span>
+                            </label>
+                            {{ form.hora }}
+                            {% if form.hora.errors %}
+                                <div class="text-danger small mt-1">
+                                    {% for error in form.hora.errors %}
+                                        <div>{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label for="{{ form.cantidad_alimento_gr.id_for_label }}" class="form-label">
+                                {{ form.cantidad_alimento_gr.label }} <span class="text-danger">*</span>
+                            </label>
+                            {{ form.cantidad_alimento_gr }}
+                            {% if form.cantidad_alimento_gr.errors %}
+                                <div class="text-danger small mt-1">
+                                    {% for error in form.cantidad_alimento_gr.errors %}
+                                        <div>{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <div class="form-text">Cantidad en gramos</div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label for="{{ form.tipo_alimento.id_for_label }}" class="form-label">
+                                {{ form.tipo_alimento.label }} <span class="text-danger">*</span>
+                            </label>
+                            {{ form.tipo_alimento }}
+                            {% if form.tipo_alimento.errors %}
+                                <div class="text-danger small mt-1">
+                                    {% for error in form.tipo_alimento.errors %}
+                                        <div>{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <div class="form-text">Ej: Pellets 2mm, Artemia, etc.</div>
+                        </div>
+                        
+                        <div class="col-12">
+                            <label for="{{ form.observaciones.id_for_label }}" class="form-label">
+                                {{ form.observaciones.label }}
+                            </label>
+                            {{ form.observaciones }}
+                            {% if form.observaciones.errors %}
+                                <div class="text-danger small mt-1">
+                                    {% for error in form.observaciones.errors %}
+                                        <div>{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between mt-4">
+                        <a href="{% url 'alimentacion-list' %}" class="btn btn-outline-secondary">
+                            <i class="bi bi-x-circle me-2"></i>Cancelar
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-circle me-2"></i>
+                            {% if object %}
+                                Actualizar Registro
+                            {% else %}
+                                Guardar Registro
+                            {% endif %}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Información adicional -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-lightbulb me-2"></i>Información Útil
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Tipos de Alimento Comunes:</h6>
+                        <ul class="list-unstyled">
+                            <li><i class="bi bi-dot text-primary"></i> Pellets 1mm (alevines pequeños)</li>
+                            <li><i class="bi bi-dot text-primary"></i> Pellets 2mm (alevines medianos)</li>
+                            <li><i class="bi bi-dot text-primary"></i> Pellets 3mm (peces en engorde)</li>
+                            <li><i class="bi bi-dot text-primary"></i> Artemia (alevines muy pequeños)</li>
+                            <li><i class="bi bi-dot text-primary"></i> Alimento vivo</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Recomendaciones:</h6>
+                        <ul class="list-unstyled">
+                            <li><i class="bi bi-check-circle text-success"></i> Registra la alimentación inmediatamente después de realizarla</li>
+                            <li><i class="bi bi-check-circle text-success"></i> Incluye observaciones sobre el comportamiento de los peces</li>
+                            <li><i class="bi bi-check-circle text-success"></i> Verifica que la cantidad sea la adecuada para el lote</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+{{ block.super }}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-completar tipo de alimento común
+    const tipoAlimentoInput = document.getElementById('{{ form.tipo_alimento.id_for_label }}');
+    const alimentosComunes = [
+        'Pellets 1mm',
+        'Pellets 2mm', 
+        'Pellets 3mm',
+        'Artemia',
+        'Alimento vivo',
+        'Pellets flotantes',
+        'Pellets hundidos'
+    ];
+    
+    tipoAlimentoInput.addEventListener('input', function() {
+        const value = this.value.toLowerCase();
+        const suggestions = alimentosComunes.filter(alimento => 
+            alimento.toLowerCase().includes(value)
+        );
+        
+        // Aquí podrías implementar un dropdown de sugerencias si lo deseas
+    });
+    
+    // Validación en tiempo real
+    const cantidadInput = document.getElementById('{{ form.cantidad_alimento_gr.id_for_label }}');
+    cantidadInput.addEventListener('input', function() {
+        const value = parseFloat(this.value);
+        if (value <= 0) {
+            this.setCustomValidity('La cantidad debe ser mayor que cero');
+        } else {
+            this.setCustomValidity('');
+        }
+    });
+});
+</script>
+{% endblock %}
