@@ -802,3 +802,67 @@ def historial_alimentacion_json(request, lote_id):
         })
     
     return JsonResponse(data, safe=False)
+
+@login_required
+def calcular_alimentacion_optimizada_json(request, lote_id):
+    """
+    Vista AJAX para calcular la alimentación optimizada de un lote.
+    """
+    lote = get_object_or_404(Lote, pk=lote_id)
+    
+    try:
+        calculo = lote.calcular_alimentacion_optimizada()
+        
+        # Agregar información adicional del lote
+        calculo.update({
+            'lote_codigo': lote.codigo_lote,
+            'cantidad_peces': lote.cantidad_total_peces,
+            'peso_promedio': lote.peso_promedio_pez_gr,
+            'talla_min': lote.talla_min_cm,
+            'talla_max': lote.talla_max_cm,
+            'etapa_actual': lote.get_etapa_actual_display(),
+            'unidad': str(lote.bastidor or lote.artesa or lote.jaula or 'Sin asignar'),
+            'fecha_calculo': timezone.now().strftime('%d/%m/%Y %H:%M')
+        })
+        
+        return JsonResponse({
+            'success': True,
+            'calculo': calculo
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': f'Error al calcular alimentación: {str(e)}'
+        }, status=500)
+
+@login_required
+def aplicar_alimentacion_optimizada_json(request, lote_id):
+    """
+    Vista AJAX para aplicar la alimentación optimizada calculada.
+    """
+    lote = get_object_or_404(Lote, pk=lote_id)
+    
+    if request.method == 'POST':
+        try:
+            calculo = lote.calcular_alimentacion_optimizada()
+            
+            # Actualizar el lote con la nueva cantidad de alimento
+            lote.cantidad_alimento_diario_gr = calculo['cantidad_gr']
+            lote.tipo_alimento = calculo['tipo_alimento']
+            lote.save()
+            
+            return JsonResponse({
+                'success': True,
+                'message': f'Alimentación optimizada aplicada: {calculo["cantidad_gr"]}g de {calculo["tipo_alimento"]}',
+                'nueva_cantidad': calculo['cantidad_gr'],
+                'nuevo_tipo': calculo['tipo_alimento']
+            })
+            
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'error': f'Error al aplicar alimentación: {str(e)}'
+            }, status=500)
+    
+    return JsonResponse({'error': 'Método no permitido'}, status=405)

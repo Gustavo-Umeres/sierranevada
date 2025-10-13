@@ -71,7 +71,7 @@ class Lote(models.Model):
     peso_promedio_pez_gr = models.FloatField(null=True, blank=True, help_text="Peso promedio en gramos")
     tipo_alimento = models.CharField(max_length=100, blank=True)
     
-    # --- PROPIEDAD AÑADIDA ---
+    # --- PROPIEDADES DE BIOMASA Y ALIMENTACIÓN ---
     @property
     def biomasa_kg(self):
         """Calcula y devuelve la biomasa total del lote en kilogramos."""
@@ -79,6 +79,146 @@ class Lote(models.Model):
             biomasa_gramos = self.cantidad_total_peces * self.peso_promedio_pez_gr
             return biomasa_gramos / 1000
         return 0
+    
+    @property
+    def biomasa_gr(self):
+        """Calcula y devuelve la biomasa total del lote en gramos."""
+        if self.cantidad_total_peces and self.peso_promedio_pez_gr:
+            return self.cantidad_total_peces * self.peso_promedio_pez_gr
+        return 0
+    
+    @property
+    def etapa_crecimiento(self):
+        """Determina la etapa de crecimiento basada en peso y talla."""
+        if not self.peso_promedio_pez_gr or not self.talla_max_cm:
+            return "Indeterminada"
+        
+        peso = self.peso_promedio_pez_gr
+        talla = self.talla_max_cm
+        
+        if peso < 2 and talla < 3:
+            return "Larva"
+        elif peso < 10 and talla < 8:
+            return "Alevín pequeño"
+        elif peso < 25 and talla < 12:
+            return "Alevín mediano"
+        elif peso < 75 and talla < 18:
+            return "Alevín grande"
+        elif peso < 150 and talla < 25:
+            return "Juvenil"
+        elif peso < 300 and talla < 35:
+            return "Adulto pequeño"
+        else:
+            return "Adulto"
+    
+    @property
+    def tipo_alimento_recomendado(self):
+        """Recomienda el tipo de alimento según la etapa de crecimiento."""
+        etapa = self.etapa_crecimiento
+        
+        recomendaciones = {
+            "Larva": "Microplancton, Artemia nauplii",
+            "Alevín pequeño": "Artemia, Pellets 0.5mm",
+            "Alevín mediano": "Pellets 1mm, Artemia",
+            "Alevín grande": "Pellets 1.5mm, Pellets 2mm",
+            "Juvenil": "Pellets 2mm, Pellets 3mm",
+            "Adulto pequeño": "Pellets 3mm, Pellets 4mm",
+            "Adulto": "Pellets 4mm, Pellets 5mm"
+        }
+        
+        return recomendaciones.get(etapa, "Consultar especialista")
+    
+    @property
+    def tasa_alimentacion_optima(self):
+        """Calcula la tasa de alimentación óptima según peso y temperatura."""
+        if not self.peso_promedio_pez_gr:
+            return 0.0
+        
+        peso = self.peso_promedio_pez_gr
+        
+        # Tasas de alimentación basadas en peso (porcentaje de biomasa por día)
+        if peso < 2:
+            return 0.12  # 12% de la biomasa
+        elif peso < 5:
+            return 0.10  # 10% de la biomasa
+        elif peso < 10:
+            return 0.08  # 8% de la biomasa
+        elif peso < 25:
+            return 0.06  # 6% de la biomasa
+        elif peso < 50:
+            return 0.04  # 4% de la biomasa
+        elif peso < 100:
+            return 0.03  # 3% de la biomasa
+        elif peso < 200:
+            return 0.025 # 2.5% de la biomasa
+        elif peso < 300:
+            return 0.02  # 2% de la biomasa
+        else:
+            return 0.015 # 1.5% de la biomasa
+    
+    def calcular_alimentacion_optimizada(self):
+        """Calcula la alimentación óptima basada en biomasa, peso y talla."""
+        if not self.cantidad_total_peces or not self.peso_promedio_pez_gr:
+            return {
+                'cantidad_gr': 0,
+                'tipo_alimento': 'No disponible',
+                'etapa_crecimiento': 'Indeterminada',
+                'tasa_alimentacion': 0,
+                'biomasa_kg': 0,
+                'recomendaciones': 'Completar datos de peso y talla'
+            }
+        
+        biomasa_gr = self.biomasa_gr
+        tasa = self.tasa_alimentacion_optima
+        cantidad_gr = biomasa_gr * tasa
+        
+        return {
+            'cantidad_gr': round(cantidad_gr, 2),
+            'tipo_alimento': self.tipo_alimento_recomendado,
+            'etapa_crecimiento': self.etapa_crecimiento,
+            'tasa_alimentacion': round(tasa * 100, 2),  # En porcentaje
+            'biomasa_kg': round(self.biomasa_kg, 2),
+            'recomendaciones': self._generar_recomendaciones()
+        }
+    
+    def _generar_recomendaciones(self):
+        """Genera recomendaciones específicas para el lote."""
+        recomendaciones = []
+        
+        if self.peso_promedio_pez_gr and self.talla_max_cm:
+            peso = self.peso_promedio_pez_gr
+            talla = self.talla_max_cm
+            
+            # Recomendaciones basadas en peso y talla
+            if peso < 5:
+                recomendaciones.append("Alimentar 4-6 veces al día")
+                recomendaciones.append("Usar alimento de alta digestibilidad")
+            elif peso < 25:
+                recomendaciones.append("Alimentar 3-4 veces al día")
+                recomendaciones.append("Monitorear crecimiento semanalmente")
+            elif peso < 100:
+                recomendaciones.append("Alimentar 2-3 veces al día")
+                recomendaciones.append("Verificar calidad del agua")
+            else:
+                recomendaciones.append("Alimentar 2 veces al día")
+                recomendaciones.append("Controlar parámetros de agua")
+            
+            # Recomendaciones específicas por etapa
+            etapa = self.etapa_crecimiento
+            if etapa in ["Larva", "Alevín pequeño"]:
+                recomendaciones.append("Mantener temperatura estable")
+                recomendaciones.append("Evitar sobrealimentación")
+            elif etapa in ["Alevín mediano", "Alevín grande"]:
+                recomendaciones.append("Incrementar gradualmente el tamaño del pellet")
+                recomendaciones.append("Monitorear conversión alimenticia")
+            elif etapa in ["Juvenil", "Adulto pequeño"]:
+                recomendaciones.append("Optimizar frecuencia de alimentación")
+                recomendaciones.append("Controlar densidad de población")
+            else:
+                recomendaciones.append("Preparar para cosecha")
+                recomendaciones.append("Optimizar conversión alimenticia")
+        
+        return recomendaciones
     # -------------------------
 
     def __str__(self):
@@ -101,22 +241,9 @@ class Lote(models.Model):
         self.save(update_fields=['cantidad_alimento_diario_gr'])
 
     def recalcular_alimento_por_biomasa(self):
-        if self.cantidad_total_peces <= 0 or not self.peso_promedio_pez_gr or self.peso_promedio_pez_gr <= 0:
-            self.cantidad_alimento_diario_gr = 0.0
-            self.save(update_fields=['cantidad_alimento_diario_gr'])
-            return
-
-        biomasa_gr = self.cantidad_total_peces * self.peso_promedio_pez_gr
-        peso = self.peso_promedio_pez_gr
-        tasa = 0.0
-        if peso < 5: tasa = 0.08
-        elif peso < 25: tasa = 0.05
-        elif peso < 100: tasa = 0.03
-        elif peso < 250: tasa = 0.018
-        else: tasa = 0.012
-
-        racion_diaria_gr = biomasa_gr * tasa
-        self.cantidad_alimento_diario_gr = round(racion_diaria_gr, 2)
+        """Recalcula la alimentación diaria usando el sistema optimizado."""
+        calculo = self.calcular_alimentacion_optimizada()
+        self.cantidad_alimento_diario_gr = calculo['cantidad_gr']
         self.save(update_fields=['cantidad_alimento_diario_gr'])
 
 class RegistroDiario(models.Model):

@@ -59,5 +59,9 @@ urlpatterns = [
     # APIs para alimentación
     path('api/lote/<int:lote_id>/registrar_alimentacion/', views.registrar_alimentacion_json, name='registrar-alimentacion-json'),
     path('api/lote/<int:lote_id>/historial_alimentacion/', views.historial_alimentacion_json, name='historial-alimentacion-json'),
+    
+    # APIs para cálculo optimizado de alimentación
+    path('api/lote/<int:lote_id>/calcular_alimentacion_optimizada/', views.calcular_alimentacion_optimizada_json, name='calcular-alimentacion-optimizada-json'),
+    path('api/lote/<int:lote_id>/aplicar_alimentacion_optimizada/', views.aplicar_alimentacion_optimizada_json, name='aplicar-alimentacion-optimizada-json'),
 
 ]
