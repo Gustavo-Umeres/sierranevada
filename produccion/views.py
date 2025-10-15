@@ -15,8 +15,19 @@ import openpyxl
 from django.db.models.functions import TruncDay
 from django.contrib.contenttypes.models import ContentType
 from django.apps import apps
-
+from .forms import DiagnosticoForm
+from .models import Enfermedad
 from .models import Bastidor, Artesa, Jaula, Lote, RegistroDiario, RegistroMortalidad, HistorialMovimiento,RegistroUnidad
+import tensorflow as tf
+import joblib
+from .forms import DiagnosticoForm
+from .ia.predictores.diagnostico_experto import SistemaExpertoSalud
+import os
+from django.conf import settings
+import tensorflow as tf
+import joblib
+import numpy as np
+
 from .forms import (
     BastidorForm, ArtesaForm, JaulaForm, LoteOvaCreateForm, 
     RegistroMortalidadForm, LoteTallaForm, LotePesoForm # <-- ELIMINADO DE AQUÍ
@@ -1176,3 +1187,78 @@ class DashboardAnaliticoView(LoginRequiredMixin, PermissionRequiredMixin, View):
         context['fcr_promedio'] = fcr_promedio if fcr_promedio is not None else Decimal(0.00)
 
         return render(request, self.template_name, context)
+
+
+@login_required
+def diagnostico_experto_view(request):
+    form = DiagnosticoForm(request.POST or None)
+    diagnostico = None
+    
+    if request.method == 'POST' and form.is_valid():
+        # Extraer los valores de los síntomas en el orden correcto
+        sintomas_observados = []
+        for i in range(len(form.fields)):
+            valor = form.cleaned_data.get(f'sintoma_{i}', False)
+            sintomas_observados.append(1 if valor else 0)
+        
+        # Llamar al sistema experto
+        sistema_experto = SistemaExpertoSalud()
+        diagnostico = sistema_experto.diagnosticar(sintomas_observados)
+
+    return render(request, 'produccion/diagnostico.html', {'form': form, 'diagnostico': diagnostico})
+
+
+
+@login_required
+def prediccion_salud_view(request):
+    lotes_activos = Lote.objects.filter(cantidad_total_peces__gt=0).exclude(etapa_actual='OVAS')
+    resultado = None
+    
+    if request.method == 'POST':
+        lote_id = request.POST.get('lote')
+        if lote_id:
+            lote = get_object_or_404(Lote, pk=lote_id)
+            
+            MODEL_PATH = os.path.join(settings.BASE_DIR, 'produccion', 'ia', 'modelo_salud.h5')
+            SCALER_PATH = os.path.join(settings.BASE_DIR, 'produccion', 'ia', 'scaler_salud.pkl')
+            
+            try:
+                # Intentamos cargar los archivos desde la ruta absoluta
+                model = tf.keras.models.load_model(MODEL_PATH)
+                scaler = joblib.load(SCALER_PATH)
+                
+                # --- Lógica de predicción (sin cambios) ---
+                dias = (timezone.now().date() - lote.fecha_ingreso_etapa).days if lote.fecha_ingreso_etapa else 0
+                datos_lote = np.array([[lote.peso_promedio_inicial_gr or 0, lote.cantidad_inicial or 0, dias]], dtype=np.float32)
+                datos_lote_scaled = scaler.transform(datos_lote)
+                probabilidad = model.predict(datos_lote_scaled)[0][0]
+                
+                if probabilidad > 0.7:
+                    recomendacion = "ALERTA ALTA: Monitorear oxígeno y comportamiento. Considerar tratamiento preventivo si la tendencia empeora."
+                    nivel_riesgo = "Alto"
+                elif probabilidad > 0.4:
+                    recomendacion = "RIESGO MODERADO: Aumentar la frecuencia de observación y asegurar la calidad del alimento y agua."
+                    nivel_riesgo = "Moderado"
+                else:
+                    recomendacion = "BAJO RIESGO: Continuar con el manejo estándar. No se detectan anomalías significativas en los datos históricos."
+                    nivel_riesgo = "Bajo"
+                
+                resultado = {
+                    'lote': lote, 'probabilidad': round(probabilidad * 100, 2), 
+                    'recomendacion': recomendacion, 'nivel_riesgo': nivel_riesgo
+                }
+
+            except FileNotFoundError as e:
+                # --- ¡ESTE ES EL CAMBIO IMPORTANTE! ---
+                # Ahora mostraremos la ruta exacta que está fallando.
+                error_message = f"Error de Archivo No Encontrado. Django está buscando el modelo en esta ruta exacta: '{MODEL_PATH}'. Por favor, verifica que el archivo exista en esa ubicación. Error original: {e}"
+                resultado = {'error': error_message}
+            except Exception as e:
+                resultado = {'error': f"Ocurrió un error inesperado al predecir: {e}"}
+
+    return render(request, 'produccion/prediccion_salud.html', {
+        'lotes': lotes_activos,
+        'resultado': resultado
+    })
+
+

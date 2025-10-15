@@ -99,3 +99,17 @@ class LotePesoForm(forms.ModelForm):
     class Meta:
         model = Lote
         fields = ['peso_promedio_pez_gr']
+
+
+class DiagnosticoForm(forms.Form):
+    # Estos labels se generan dinámicamente desde la base de conocimiento
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        
+        # Carga los síntomas desde el archivo JSON para crear los campos
+        from produccion.ia.predictores.diagnostico_experto import SistemaExpertoSalud
+        sistema_experto = SistemaExpertoSalud()
+        sintomas_labels = sistema_experto.base_conocimiento['sintomas']
+
+        for i, label in enumerate(sintomas_labels):
+            self.fields[f'sintoma_{i}'] = forms.BooleanField(label=label, required=False)

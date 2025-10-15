@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1 class="h2 mb-4">Sistema Experto de Diagnóstico</h1>
+<div class="card shadow-sm">
+    <div class="card-header">
+        <h5 class="mb-0">Formulario de Síntomas</h5>
+    </div>
+    <div class="card-body">
+        <p class="text-muted">Selecciona todos los síntomas que observes en los peces afectados.</p>
+        <form method="post">
+            {% csrf_token %}
+            <div class="row">
+                {% for field in form %}
+                    <div class="col-md-6">
+                        <div class="form-check form-switch mb-3">
+                            {{ field }}
+                            <label class="form-check-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+            <hr>
+            <button type="submit" class="btn btn-primary"><i class="bi bi-search me-2"></i>Realizar Diagnóstico</button>
+        </form>
+    </div>
+</div>
+
+{% if diagnostico %}
+<div class="mt-4">
+    <h2 class="h3">Resultado del Diagnóstico</h2>
+    <div class="alert {% if diagnostico.nombre %}alert-warning{% else %}alert-info{% endif %}">
+        {% if diagnostico.nombre %}
+            <h4 class="alert-heading">Posible Enfermedad: {{ diagnostico.nombre }}</h4>
+            <hr>
+            <p><strong>Descripción y Síntomas:</strong> {{ diagnostico.descripcion|linebreaks }}</p>
+            <hr>
+            <p><strong>Tratamiento Recomendado:</strong> {{ diagnostico.tratamiento|linebreaks }}</p>
+            <hr>
+            <p class="mb-0"><strong>Prevención:</strong> {{ diagnostico.prevencion|linebreaks }}</p>
+        {% else %}
+            <h4 class="alert-heading">Diagnóstico Preliminar</h4>
+            <p>{{ diagnostico }}</p>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+{% endblock %}

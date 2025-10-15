@@ -60,4 +60,7 @@ urlpatterns = [
     path('api/dashboard-data/', views.dashboard_data_json, name='dashboard-data-json'),
     path('analitico/', views.dashboard_analitico, name='dashboard-analitico'),
     path('reportes/exportar-lotes/', views.exportar_lotes_excel, name='exportar-lotes-excel'),
+    path('diagnostico/', views.diagnostico_experto_view, name='diagnostico-experto'),
+    path('salud/diagnostico/', views.diagnostico_experto_view, name='diagnostico-experto'),
+    path('salud/prediccion/', views.prediccion_salud_view, name='prediccion-salud'),
 ]

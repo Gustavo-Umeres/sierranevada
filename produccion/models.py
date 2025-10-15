@@ -325,3 +325,13 @@ class RegistroUnidad(models.Model):
 
     def __str__(self):
         return f"Registro de {self.unidad} para {self.fecha}"
+    
+
+class Enfermedad(models.Model):
+    nombre = models.CharField(max_length=100, unique=True)
+    descripcion = models.TextField(verbose_name="Descripción y Síntomas")
+    tratamiento = models.TextField(help_text="Pasos recomendados para el tratamiento.")
+    prevencion = models.TextField(help_text="Medidas para prevenir la enfermedad.")
+
+    def __str__(self):
+        return self.nombre

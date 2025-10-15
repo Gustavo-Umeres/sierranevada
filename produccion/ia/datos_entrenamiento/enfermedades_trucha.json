@@ -1,0 +1,33 @@
+{
+    "sintomas": [
+        "Letargia / Inactividad",
+        "Nado errático / Frotamiento",
+        "Puntos blancos (como sal)",
+        "Aletas deshilachadas / podridas",
+        "Abdomen hinchado",
+        "Ojos saltones (exoftalmia)",
+        "Lesiones algodonosas en la piel",
+        "Boqueo en la superficie"
+    ],
+    "enfermedades": {
+        "Sano / Estrés leve": {
+            "descripcion": "El pez no muestra síntomas claros de una enfermedad específica.",
+            "tratamiento": "Revisar la calidad del agua (oxígeno, amoníaco, pH). Asegurar que la alimentación sea la correcta y no haya sobrepoblación."
+        },
+        "Enfermedad del Punto Blanco (Ich)": {
+            "sintomas": [0, 1, 1, 0, 0, 0, 0, 0],
+            "descripcion": "Parásito común que causa irritación y estrés severo.",
+            "tratamiento": "Aplicar tratamientos comerciales con verde de malaquita o formalina. Considerar baños de sal (NaCl) en tanques de tratamiento."
+        },
+        "Putrefacción de Aletas (Fin Rot)": {
+            "sintomas": [1, 0, 0, 1, 0, 0, 1, 0],
+            "descripcion": "Infección bacteriana que degrada las aletas, a menudo por mala calidad del agua.",
+            "tratamiento": "Mejorar la calidad del agua urgentemente. Aplicar antibióticos en el alimento o en el agua, como oxitetraciclina."
+        },
+        "Hidropesía": {
+            "sintomas": [1, 0, 0, 0, 1, 1, 0, 0],
+            "descripcion": "Acumulación de líquido en el cuerpo, a menudo por fallo renal o infección bacteriana grave. Mal pronóstico.",
+            "tratamiento": "Aislar a los peces afectados. Tratamiento con antibióticos potentes. Suele ser difícil de curar."
+        }
+    }
+}

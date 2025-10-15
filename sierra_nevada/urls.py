@@ -23,4 +23,6 @@ urlpatterns = [
     path('accounts/recuperar/', usuarios_views.recuperar_password_dni, name='recuperar-password-dni'),
     path('accounts/recuperar/pregunta/', usuarios_views.recuperar_password_pregunta, name='recuperar-password-pregunta'),
     path('accounts/recuperar/reset/', usuarios_views.recuperar_password_reset, name='recuperar-password-reset'),
+    path('salud/prediccion/', produccion_views.prediccion_salud_view, name='prediccion-salud'),
+
 ]

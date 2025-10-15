@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1 class="h2 mb-4">Predicción de Riesgo de Mortalidad</h1>
+
+<div class="card shadow-sm">
+    <div class="card-header">
+        <h5 class="mb-0">Seleccionar Lote para Análisis</h5>
+    </div>
+    <div class.card-body>
+        <form method="post" class="row g-3 align-items-end p-3">
+            {% csrf_token %}
+            <div class="col-md-4">
+                <label for="loteSelect" class="form-label">Lote Activo</label>
+                <select name="lote" id="loteSelect" class="form-select">
+                    <option selected disabled>Elige un lote...</option>
+                    {% for lote in lotes %}
+                        <option value="{{ lote.pk }}">{{ lote.codigo_lote }} ({{ lote.get_etapa_actual_display }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <button type="submit" class="btn btn-primary w-100"><i class="bi bi-robot me-2"></i>Analizar Riesgo</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% if resultado %}
+<div class="mt-4">
+    <h2 class="h3">Resultado del Análisis</h2>
+    {% if resultado.error %}
+        <div class="alert alert-danger">{{ resultado.error }}</div>
+    {% else %}
+        <div class="card">
+            <div class="card-header">
+                Análisis para el Lote: <strong>{{ resultado.lote.codigo_lote }}</strong>
+            </div>
+            <div class="card-body">
+                <div class="row align-items-center text-center">
+                    <div class="col-md-4">
+                        <h4>Riesgo de Brote</h4>
+                        {% if resultado.nivel_riesgo == 'Alto' %}
+                            <p class="display-4 fw-bold text-danger">{{ resultado.probabilidad }}%</p>
+                            <span class="badge bg-danger fs-6">Alto</span>
+                        {% elif resultado.nivel_riesgo == 'Moderado' %}
+                            <p class="display-4 fw-bold text-warning">{{ resultado.probabilidad }}%</p>
+                            <span class="badge bg-warning text-dark fs-6">Moderado</span>
+                        {% else %}
+                            <p class="display-4 fw-bold text-success">{{ resultado.probabilidad }}%</p>
+                            <span class="badge bg-success fs-6">Bajo</span>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-8 border-start">
+                        <h5 class="card-title">Recomendación del Sistema</h5>
+                        <p class="card-text">{{ resultado.recomendacion }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endif %}
+
+{% endblock %}
