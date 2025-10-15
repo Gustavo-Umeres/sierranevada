@@ -121,3 +121,16 @@ class RegistroCondicionesForm(forms.ModelForm):
     class Meta:
         model = RegistroCondiciones
         fields = ['temp_agua_c', 'ph', 'oxigeno_mg_l', 'amoniaco_mg_l']
+
+
+
+class DiagnosticoManualForm(forms.Form):
+    lote = forms.ModelChoiceField(
+        queryset=Lote.objects.filter(activo=True, etapa_actual__in=['ALEVINES', 'JUVENILES', 'ENGORDE']),
+        label="1. Seleccionar Lote Activo",
+        required=True
+    )
+    # Aquí puedes añadir los campos para los síntomas
+    # Por ejemplo:
+    # sintoma_algodonoso = forms.BooleanField(label="Presencia de lesiones algodonosas", required=False)
+    # comportamiento_anormal = forms.BooleanField(label="Comportamiento anormal (frotamiento, nado errático)", required=False)

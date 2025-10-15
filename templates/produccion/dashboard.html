@@ -50,7 +50,6 @@
 
 <hr class="my-4">
 
-{# Fila para las nuevas funcionalidades #}
 <h2 class="h3 mb-4">Herramientas Adicionales</h2>
 <div class="row row-cols-1 row-cols-md-3 g-4 text-center">
     <div class="col">
@@ -72,25 +71,7 @@
                 <h5 class="card-title mt-3">Reporte de Lotes</h5>
                 <p class="card-text">Consulta y exporta el estado de todos los lotes.</p>
                 <div class="mt-auto pt-3">
-                     <a href="{% url 'historial-trazabilidad' %}" class="btn btn-outline-success w-100">Ver Reporte</a>
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    {# --- TARJETA DE IA UNIFICADA --- #}
-    <div class="col">
-        <div class="card shadow-sm h-100">
-            <div class="card-body d-flex flex-column justify-content-center p-4">
-                <i class="bi bi-heart-pulse fs-1 text-danger"></i>
-                {# Título y texto actualizados para reflejar la única función #}
-                <h5 class="card-title mt-3">Asistente de Diagnóstico IA</h5>
-                <p class="card-text">Analiza tus lotes para detectar posibles enfermedades y recibe un plan de acción.</p>
-                <div class="mt-auto pt-3">
-                    {# Se eliminó el div "d-grid" y el botón antiguo #}
-                    <a href="{% url 'prediccion_diagnostico' %}" class="btn btn-danger w-100">
-                        <i class="bi bi-shield-check me-2"></i>Iniciar Diagnóstico por Lote
-                    </a>
+                    <a href="{% url 'historial-trazabilidad' %}" class="btn btn-outline-success w-100">Ver Reporte</a>
                 </div>
             </div>
         </div>

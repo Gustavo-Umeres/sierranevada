@@ -18,13 +18,11 @@ from django.apps import apps
 from .forms import DiagnosticoForm
 from .models import Enfermedad
 from .models import Bastidor, Artesa, Jaula, Lote, RegistroDiario, RegistroMortalidad, HistorialMovimiento,RegistroUnidad
-import tensorflow as tf
 import joblib
 from .forms import DiagnosticoForm
 from .ia.predictores.diagnostico_experto import SistemaExpertoSalud
 import os
 from django.conf import settings
-import tensorflow as tf
 import joblib
 import numpy as np
 from django.shortcuts import render
@@ -35,10 +33,19 @@ from django.conf import settings
 import random
 from .models import RegistroCondiciones
 from .forms import RegistroCondicionesForm
+from .forms import DiagnosticoManualForm
+from .ia.diagnostico_service import DiagnosticoService
+from decimal import Decimal
+from django.db.models import Avg, DecimalField
+from .ia.diagnostico_service import DiagnosticoService
+from .forms import DiagnosticoManualForm
+from .models import Lote, RegistroCondiciones
+from django.contrib import messages
+
 
 from .forms import (
     BastidorForm, ArtesaForm, JaulaForm, LoteOvaCreateForm, 
-    RegistroMortalidadForm, LoteTallaForm, LotePesoForm # <-- ELIMINADO DE AQUÍ
+    RegistroMortalidadForm, LoteTallaForm, LotePesoForm
 )
 # ================================================================
 # MIXIN DE PERMISOS Y VISTAS GENERALES
@@ -1334,61 +1341,40 @@ def diagnostico_experto_view(request):
 
 @login_required
 def prediccion_salud_view(request):
-    lotes_activos = Lote.objects.filter(cantidad_total_peces__gt=0).exclude(etapa_actual='OVAS')
+    lotes_activos = Lote.objects.filter(activo=True).exclude(etapa_actual='OVAS')
+    form = DiagnosticoManualForm(request.POST or None)
     resultado = None
-    
-    if request.method == 'POST':
-        lote_id = request.POST.get('lote')
-        if lote_id:
-            lote = get_object_or_404(Lote, pk=lote_id)
-            
-            MODEL_PATH = os.path.join(settings.BASE_DIR, 'produccion', 'ia', 'modelo_salud.h5')
-            SCALER_PATH = os.path.join(settings.BASE_DIR, 'produccion', 'ia', 'scaler_salud.pkl')
-            
-            try:
-                # Intentamos cargar los archivos desde la ruta absoluta
-                model = tf.keras.models.load_model(MODEL_PATH)
-                scaler = joblib.load(SCALER_PATH)
-                
-                # --- Lógica de predicción (sin cambios) ---
-                dias = (timezone.now().date() - lote.fecha_ingreso_etapa).days if lote.fecha_ingreso_etapa else 0
-                datos_lote = np.array([[lote.peso_promedio_inicial_gr or 0, lote.cantidad_inicial or 0, dias]], dtype=np.float32)
-                datos_lote_scaled = scaler.transform(datos_lote)
-                probabilidad = model.predict(datos_lote_scaled)[0][0]
-                
-                if probabilidad > 0.7:
-                    recomendacion = "ALERTA ALTA: Monitorear oxígeno y comportamiento. Considerar tratamiento preventivo si la tendencia empeora."
-                    nivel_riesgo = "Alto"
-                elif probabilidad > 0.4:
-                    recomendacion = "RIESGO MODERADO: Aumentar la frecuencia de observación y asegurar la calidad del alimento y agua."
-                    nivel_riesgo = "Moderado"
-                else:
-                    recomendacion = "BAJO RIESGO: Continuar con el manejo estándar. No se detectan anomalías significativas en los datos históricos."
-                    nivel_riesgo = "Bajo"
-                
-                resultado = {
-                    'lote': lote, 'probabilidad': round(probabilidad * 100, 2), 
-                    'recomendacion': recomendacion, 'nivel_riesgo': nivel_riesgo
-                }
+    error_message = None
 
-            except FileNotFoundError as e:
-                # --- ¡ESTE ES EL CAMBIO IMPORTANTE! ---
-                # Ahora mostraremos la ruta exacta que está fallando.
-                error_message = f"Error de Archivo No Encontrado. Django está buscando el modelo en esta ruta exacta: '{MODEL_PATH}'. Por favor, verifica que el archivo exista en esa ubicación. Error original: {e}"
-                resultado = {'error': error_message}
+    if request.method == 'POST':
+        if form.is_valid():
+            lote = form.cleaned_data['lote']
+
+            try:
+                # service = DiagnosticoService() # COMENTAR O ELIMINAR
+                # Buscar el último registro de condiciones para el lote
+                registro_condiciones = RegistroCondiciones.objects.filter(lote=lote).order_by('-fecha').first()
+                
+                if not registro_condiciones:
+                    # Si no hay datos, lanzamos una excepción para ser capturada
+                    raise ValueError("No existen registros de condiciones para este lote. Por favor, ingrese los datos primero.")
+                
+                # Realizar el diagnóstico usando el servicio
+                # resultado = service.predecir(lote, registro_condiciones) # COMENTAR O ELIMINAR
+                
+            except ValueError as e:
+                error_message = str(e)
+            # except FileNotFoundError: # COMENTAR O ELIMINAR
+            #     error_message = "El modelo de predicción no está disponible. Por favor, entrene el modelo." # COMENTAR O ELIMINAR
             except Exception as e:
-                resultado = {'error': f"Ocurrió un error inesperado al predecir: {e}"}
+                error_message = f"Ocurrió un error inesperado al predecir: {e}"
 
     return render(request, 'produccion/prediccion_salud.html', {
         'lotes': lotes_activos,
-        'resultado': resultado
+        'form': form,
+        'resultado': resultado,
+        'error_message': error_message,
     })
-
-
-
-
-
-
 # --- Definimos las rutas a los archivos ---
 MODEL_PATH = os.path.join(settings.BASE_DIR, 'produccion', 'ia', 'predictores', 'diagnostico_model.joblib')
 COLUMNS_PATH = os.path.join(settings.BASE_DIR, 'produccion', 'ia', 'predictores', 'diagnostico_features.joblib')
@@ -1409,21 +1395,21 @@ def prediccion_diagnostico_view(request):
     global DIAGNOSTICO_MODEL, FEATURE_COLUMNS # Usaremos las variables globales
 
     # --- Lazy Loading: Cargamos el modelo solo si no ha sido cargado antes ---
-    if DIAGNOSTICO_MODEL is None:
-        try:
-            DIAGNOSTICO_MODEL = joblib.load(MODEL_PATH)
-            FEATURE_COLUMNS = joblib.load(COLUMNS_PATH)
-        except FileNotFoundError:
-            # Si el archivo no existe, no podemos hacer predicciones.
-            # Esto es normal si el modelo aún no se ha entrenado.
-            pass
+    # if DIAGNOSTICO_MODEL is None: # COMENTAR O ELIMINAR
+    #     try: # COMENTAR O ELIMINAR
+    #         DIAGNOSTICO_MODEL = joblib.load(MODEL_PATH) # COMENTAR O ELIMINAR
+    #         FEATURE_COLUMNS = joblib.load(COLUMNS_PATH) # COMENTAR O ELIMINAR
+    #     except FileNotFoundError: # COMENTAR O ELIMINAR
+    #         # Si el archivo no existe, no podemos hacer predicciones. # COMENTAR O ELIMINAR
+    #         # Esto es normal si el modelo aún no se ha entrenado. # COMENTAR O ELIMINAR
+    #         pass # COMENTAR O ELIMINAR
 
     context = {}
     if request.method == 'POST':
         # Asegurarnos de que el modelo esté cargado antes de intentar predecir
-        if DIAGNOSTICO_MODEL is None:
-            context['error'] = "El modelo de diagnóstico aún no ha sido entrenado. Por favor, ejecute el comando 'entrenar_modelo_diagnostico' desde la terminal."
-            return render(request, 'produccion/prediccion_diagnostico.html', context)
+        # if DIAGNOSTICO_MODEL is None: # COMENTAR O ELIMINAR
+        #    context['error'] = "El modelo de diagnóstico aún no ha sido entrenado. Por favor, ejecute el comando 'entrenar_modelo_diagnostico' desde la terminal." # COMENTAR O ELIMINAR
+        #    return render(request, 'produccion/prediccion_diagnostico.html', context) # COMENTAR O ELIMINAR
             
         try:
             # 1. Recolectar datos del formulario
@@ -1437,55 +1423,26 @@ def prediccion_diagnostico_view(request):
                 'comportamiento_anormal': [int(request.POST.get('comportamiento_anormal'))]
             }
             
-            # 2. Crear un DataFrame con el orden correcto de columnas
-            input_df = pd.DataFrame(input_data)
-            input_df = input_df[FEATURE_COLUMNS] # Asegurar el orden correcto
+            # --- Lógica del Sistema Experto (Reemplazo del modelo de IA) ---
+            diagnostico_principal = "Sano" # Diagnóstico por defecto
 
-            # 3. Realizar la predicción
-            prediccion = DIAGNOSTICO_MODEL.predict(input_df)[0]
-            probabilidades = DIAGNOSTICO_MODEL.predict_proba(input_df)[0]
+            if input_data['temp_agua'][0] < 6.0 and input_data['sintoma_algodonoso'][0] == 1:
+                diagnostico_principal = "Saprolegniasis"
+            elif input_data['ph'][0] < 6.8 and input_data['sintoma_aletas_deshilachadas'][0] == 1:
+                diagnostico_principal = "Columnaris"
+            elif input_data['oxigeno'][0] < 6.0 and input_data['comportamiento_anormal'][0] == 1:
+                diagnostico_principal = "Estres_por_hipoxia"
+            elif input_data['comportamiento_anormal'][0] == 1 and input_data['temp_agua'][0] > 15.0:
+                diagnostico_principal = "Punto Blanco (Ich)"
 
-            # 4. Preparar el contexto para la plantilla
-            confianza = max(probabilidades) * 100
+
+            confianza = 100.0 # Ya no hay modelo, la confianza es del 100%
             
-            context['diagnostico'] = prediccion
+            context['diagnostico'] = diagnostico_principal
             context['confianza'] = f"{confianza:.2f}%"
-            context['explicacion'] = EXPLICACIONES.get(prediccion, "No hay una explicación disponible.")
-            context['resultados'] = True # Para mostrar la sección de resultados
-            
-        except Exception as e:
-            context['error'] = f"Ocurrió un error al procesar la solicitud: {e}"
-
-    return render(request, 'produccion/prediccion_diagnostico.html', context)
-    context = {}
-    if request.method == 'POST':
-        try:
-            # 1. Recolectar datos del formulario
-            input_data = {
-                'temp_agua': [float(request.POST.get('temp_agua'))],
-                'ph': [float(request.POST.get('ph'))],
-                'oxigeno': [float(request.POST.get('oxigeno'))],
-                'amoniaco': [float(request.POST.get('amoniaco'))],
-                'sintoma_algodonoso': [int(request.POST.get('sintoma_algodonoso'))],
-                'sintoma_aletas_deshilachadas': [int(request.POST.get('sintoma_aletas_deshilachadas'))],
-                'comportamiento_anormal': [int(request.POST.get('comportamiento_anormal'))]
-            }
-            
-            # 2. Crear un DataFrame con el orden correcto de columnas
-            input_df = pd.DataFrame(input_data)
-            input_df = input_df[FEATURE_COLUMNS] # Asegurar el orden correcto
-
-            # 3. Realizar la predicción
-            prediccion = DIAGNOSTICO_MODEL.predict(input_df)[0]
-            probabilidades = DIAGNOSTICO_MODEL.predict_proba(input_df)[0]
-
-            # 4. Preparar el contexto para la plantilla
-            confianza = max(probabilidades) * 100
-            
-            context['diagnostico'] = prediccion
-            context['confianza'] = f"{confianza:.2f}%"
-            context['explicacion'] = EXPLICACIONES.get(prediccion, "No hay una explicación disponible.")
-            context['resultados'] = True # Para mostrar la sección de resultados
+            context['explicacion'] = KNOWLEDGE_BASE.get(diagnostico_principal, {}).get('explicacion', "No hay una explicación disponible.")
+            context['plan_de_accion'] = KNOWLEDGE_BASE.get(diagnostico_principal, {}).get('plan_de_accion', ["No se encontró un plan de acción."])
+            context['resultados'] = True
             
         except Exception as e:
             context['error'] = f"Ocurrió un error al procesar la solicitud: {e}"
@@ -1494,10 +1451,10 @@ def prediccion_diagnostico_view(request):
 
 
 # --- Cargar el modelo y las columnas ---
-MODEL_PATH = os.path.join(settings.BASE_DIR, 'produccion', 'ia', 'predictores', 'diagnostico_model.joblib')
-COLUMNS_PATH = os.path.join(settings.BASE_DIR, 'produccion', 'ia', 'predictores', 'diagnostico_features.joblib')
-DIAGNOSTICO_MODEL = None
-FEATURE_COLUMNS = None
+# COMENTAR O ELIMINAR LAS SIGUIENTES 3 LÍNEAS
+# MODEL_PATH = os.path.join(settings.BASE_DIR, 'produccion', 'ia', 'predictores', 'diagnostico_model.joblib')
+# COLUMNS_PATH = os.path.join(settings.BASE_DIR, 'produccion', 'ia', 'predictores', 'diagnostico_features.joblib')
+# DIAGNOSTICO_MODEL = None
 
 # --- Base de Conocimiento Ampliada con Enfermedades Típicas de Trucha ---
 KNOWLEDGE_BASE = {
@@ -1542,7 +1499,6 @@ KNOWLEDGE_BASE = {
         ]
     }
 }
-
 def simular_parametros_actuales(lote):
     """
     SIMULACIÓN AVANZADA:
@@ -1600,15 +1556,16 @@ def simular_parametros_actuales(lote):
         
     return data
 
+@login_required
 def diagnostico_por_lote_view(request):
-    global DIAGNOSTICO_MODEL, FEATURE_COLUMNS
-    
-    if DIAGNOSTICO_MODEL is None:
-        try:
-            DIAGNOSTICO_MODEL = joblib.load(MODEL_PATH)
-            FEATURE_COLUMNS = joblib.load(COLUMNS_PATH)
-        except FileNotFoundError:
-            pass
+    # Ya no es necesario cargar el modelo global
+    # global DIAGNOSTICO_MODEL, FEATURE_COLUMNS
+    # if DIAGNOSTICO_MODEL is None:
+    #     try:
+    #         DIAGNOSTICO_MODEL = joblib.load(MODEL_PATH)
+    #         FEATURE_COLUMNS = joblib.load(COLUMNS_PATH)
+    #     except FileNotFoundError:
+    #         pass
 
     lotes = Lote.objects.filter(activo=True).order_by('-fecha_ingreso_etapa')
     context = {'lotes': lotes}
@@ -1616,46 +1573,41 @@ def diagnostico_por_lote_view(request):
     if request.method == 'POST':
         lote_id = request.POST.get('lote_id')
         if not lote_id:
-            context['error'] = "Por favor, seleccione un lote."
+            context['error_message'] = "Por favor, seleccione un lote."
             return render(request, 'produccion/diagnostico_por_lote.html', context)
         
-        selected_lote = Lote.objects.get(id=lote_id)
+        selected_lote = get_object_or_404(Lote, id=lote_id)
         context['selected_lote'] = selected_lote
 
-        if DIAGNOSTICO_MODEL is None:
-            context['error'] = "El modelo de diagnóstico aún no ha sido entrenado. Por favor, ejecute el comando 'entrenar_modelo_diagnostico'."
+        # Reemplazamos la lógica de predicción del modelo de ML con un sistema experto
+        registro_condiciones = RegistroCondiciones.objects.filter(lote=selected_lote).order_by('-fecha').first()
+        
+        if not registro_condiciones:
+            context['error_message'] = "No existen registros de condiciones para este lote. Por favor, ingrese los datos primero."
             return render(request, 'produccion/diagnostico_por_lote.html', context)
 
-        datos_simulados = simular_parametros_actuales(selected_lote)
-        context['datos_simulados'] = datos_simulados
+        # Lógica del sistema experto simplificado
+        diagnostico_principal = "Sano"
         
-        # El modelo solo entiende los síntomas para los que fue entrenado.
-        # Por eso, aunque simulamos "Punto Blanco", lo expresamos como "comportamiento_anormal" para el modelo.
-        input_df = pd.DataFrame([datos_simulados])
-        input_df = input_df[FEATURE_COLUMNS]
+        # Ejemplo de reglas:
+        if registro_condiciones.temp_agua_c is not None and registro_condiciones.temp_agua_c < 6.0:
+            diagnostico_principal = "Saprolegniasis" # Posible hongo por baja temperatura
+        elif registro_condiciones.ph is not None and (registro_condiciones.ph < 6.8 or registro_condiciones.ph > 8.0):
+            diagnostico_principal = "Columnaris" # Posible infección bacteriana por estrés de pH
+        elif registro_condiciones.oxigeno_mg_l is not None and registro_condiciones.oxigeno_mg_l < 5.0:
+            diagnostico_principal = "Estres_por_hipoxia" # Bajo oxígeno
 
-        prediccion = DIAGNOSTICO_MODEL.predict(input_df)[0]
-        probabilidades = DIAGNOSTICO_MODEL.predict_proba(input_df)[0]
-
-        # Mapeamos la predicción del modelo (que puede ser genérica) a un diagnóstico más rico si la simulación lo sugiere
-        diagnostico_real_predicho = prediccion
-        if datos_simulados['comportamiento_anormal'] == 1 and datos_simulados['sintoma_algodonoso'] == 0 and datos_simulados['sintoma_aletas_deshilachadas'] == 0:
-             # Si el único síntoma es comportamiento, y la predicción no es clara, podemos inferir Punto Blanco
-             if "Punto Blanco (Ich)" in DIAGNOSTICO_MODEL.classes_:
-                diagnostico_real_predicho = "Punto Blanco (Ich)"
-
-
-        resultados_prob = sorted(zip(DIAGNOSTICO_MODEL.classes_, probabilidades * 100), key=lambda x: x[1], reverse=True)
+        # Aquí podrías añadir más reglas o combinar los datos con observaciones manuales si existieran
         
-        # Aseguramos que el resultado principal coincida con la lógica de simulación más rica
-        context['diagnostico_principal'] = next((item for item in resultados_prob if item[0] == diagnostico_real_predicho), resultados_prob[0])
-        context['otras_posibilidades'] = [item for item in resultados_prob if item[0] != context['diagnostico_principal'][0]]
-        context['conocimiento'] = KNOWLEDGE_BASE.get(context['diagnostico_principal'][0])
-        context['resultados'] = True
-
+        context['resultado'] = {
+            'lote': selected_lote,
+            'nivel_riesgo': diagnostico_principal,
+            'probabilidad': 100.0, # El sistema experto da 100% de confianza en sus reglas
+            'recomendacion': KNOWLEDGE_BASE.get(diagnostico_principal, {}).get('explicacion', "No hay una explicación disponible."),
+            'plan_de_accion': KNOWLEDGE_BASE.get(diagnostico_principal, {}).get('plan_de_accion', ["No se encontró un plan de acción."])
+        }
+            
     return render(request, 'produccion/diagnostico_por_lote.html', context)
-
-
 
 
 @login_required
