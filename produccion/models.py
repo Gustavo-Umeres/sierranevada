@@ -336,3 +336,22 @@ class Enfermedad(models.Model):
 
     def __str__(self):
         return self.nombre
+    
+
+
+
+class RegistroCondiciones(models.Model):
+    lote = models.ForeignKey(Lote, on_delete=models.CASCADE, related_name='registros_condiciones')
+    fecha = models.DateField(default=timezone.now)
+    temp_agua_c = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True, verbose_name="Temperatura del Agua (°C)")
+    ph = models.DecimalField(max_digits=4, decimal_places=2, null=True, blank=True, verbose_name="Nivel de pH")
+    oxigeno_mg_l = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True, verbose_name="Oxígeno Disuelto (mg/L)")
+    amoniaco_mg_l = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True, verbose_name="Amoníaco (mg/L)")
+
+    class Meta:
+        # Asegura que solo haya un registro de condiciones por lote por día
+        unique_together = ('lote', 'fecha')
+        ordering = ['-fecha']
+
+    def __str__(self):
+        return f"Condiciones de {self.lote.codigo_lote} en {self.fecha}"

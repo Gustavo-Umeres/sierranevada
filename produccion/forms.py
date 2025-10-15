@@ -1,6 +1,7 @@
 from django import forms
 from .models import Bastidor, Artesa, Jaula, Lote, RegistroMortalidad
-
+from django import forms
+from .models import RegistroCondiciones
 # ----------------------------------------------------------------
 # FORMULARIO PARA BASTIDORES - Sin cambios
 # ----------------------------------------------------------------
@@ -113,3 +114,10 @@ class DiagnosticoForm(forms.Form):
 
         for i, label in enumerate(sintomas_labels):
             self.fields[f'sintoma_{i}'] = forms.BooleanField(label=label, required=False)
+
+
+
+class RegistroCondicionesForm(forms.ModelForm):
+    class Meta:
+        model = RegistroCondiciones
+        fields = ['temp_agua_c', 'ph', 'oxigeno_mg_l', 'amoniaco_mg_l']

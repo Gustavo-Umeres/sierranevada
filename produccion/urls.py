@@ -73,4 +73,7 @@ urlpatterns = [
     
     # 3. ¡EL NUEVO! El sistema de diagnóstico por lote con IA
     path('salud/diagnostico/', views.diagnostico_por_lote_view, name='prediccion_diagnostico'),
+    
+    path('api/lote/<int:lote_id>/get_condiciones/', views.get_condiciones_json, name='get-condiciones-json'),
+    path('api/lote/<int:lote_id>/save_condiciones/', views.save_condiciones_json, name='save-condiciones-json'),
 ]

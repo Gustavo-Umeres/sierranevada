@@ -33,6 +33,8 @@ import joblib
 import os
 from django.conf import settings
 import random
+from .models import RegistroCondiciones
+from .forms import RegistroCondicionesForm
 
 from .forms import (
     BastidorForm, ArtesaForm, JaulaForm, LoteOvaCreateForm, 
@@ -1652,3 +1654,55 @@ def diagnostico_por_lote_view(request):
         context['resultados'] = True
 
     return render(request, 'produccion/diagnostico_por_lote.html', context)
+
+
+
+
+@login_required
+def get_condiciones_json(request, lote_id):
+    """
+    Retorna las condiciones del lote para el día de hoy, si existen.
+    """
+    lote = get_object_or_404(Lote, pk=lote_id)
+    hoy = timezone.now().date()
+    registro = RegistroCondiciones.objects.filter(lote=lote, fecha=hoy).first()
+
+    if registro:
+        data = {
+            'exists': True,
+            'temp_agua_c': float(registro.temp_agua_c) if registro.temp_agua_c else None,
+            'ph': float(registro.ph) if registro.ph else None,
+            'oxigeno_mg_l': float(registro.oxigeno_mg_l) if registro.oxigeno_mg_l else None,
+            'amoniaco_mg_l': float(registro.amoniaco_mg_l) if registro.amoniaco_mg_l else None,
+        }
+    else:
+        data = {'exists': False}
+
+    return JsonResponse(data)
+
+@login_required
+@transaction.atomic
+def save_condiciones_json(request, lote_id):
+    """
+    Guarda las condiciones del lote para el día de hoy.
+    """
+    if request.method == 'POST':
+        lote = get_object_or_404(Lote, pk=lote_id)
+        hoy = timezone.now().date()
+        
+        # Obtener el registro existente o crear uno nuevo
+        registro, created = RegistroCondiciones.objects.get_or_create(lote=lote, fecha=hoy)
+        
+        # Actualizar los valores del registro
+        registro.temp_agua_c = request.POST.get('temp_agua_c')
+        registro.ph = request.POST.get('ph')
+        registro.oxigeno_mg_l = request.POST.get('oxigeno_mg_l')
+        registro.amoniaco_mg_l = request.POST.get('amoniaco_mg_l')
+        
+        try:
+            registro.save()
+            return JsonResponse({'success': True, 'message': 'Condiciones guardadas con éxito.'})
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': f"Error al guardar: {e}"}, status=400)
+    
+    return JsonResponse({'error': 'Método no permitido.'}, status=405)

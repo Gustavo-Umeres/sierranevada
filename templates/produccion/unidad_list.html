@@ -83,11 +83,62 @@
     {% endfor %}
 </div>
 
-<div class="modal fade" id="detailModal" tabindex="-1"><div class="modal-dialog modal-dialog-scrollable modal-dialog-centered"><div class="modal-content"><div class="modal-header"><h5 class="modal-title" id="detailModalTitle"></h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body" id="detailModalBody"></div></div></div></div>
-<div class="modal fade" id="addOvaModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-header"><h5 class="modal-title">Añadir Ovas a <span id="addOvaBastidorCodigo"></span></h5><button type="button" class="btn-close" data-bs-target="#detailModal" data-bs-toggle="modal"></button></div><div class="modal-body"><form id="addOvaForm" autocomplete="off"><input type="hidden" name="bastidor_id"><div class="mb-3"><label for="id_cantidad_total_peces_ova" class="form-label">Cantidad de Ovas</label><input type="number" name="cantidad_total_peces" class="form-control" id="id_cantidad_total_peces_ova" required min="1"><div class="form-text">Capacidad máxima: <span id="addOvaCapacidad"></span></div></div><div id="addOvaErrors" class="text-danger small mt-2"></div><div class="d-flex justify-content-end mt-3"><button type="button" class="btn btn-light me-2" data-bs-target="#detailModal" data-bs-toggle="modal">Cancelar</button><button type="submit" class="btn btn-primary">Guardar Lote</button></div></form></div></div></div></div>
-<div class="modal fade" id="actionModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-header"><h5 class="modal-title" id="actionModalTitle"></h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body" id="actionModalBody"></div><div class="modal-footer d-none" id="actionModalFooter"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button><button type="submit" form="actionForm" class="btn btn-primary" id="actionModalSubmitBtn"></button></div></div></div></div>
+<div class="modal fade" id="detailModal" tabindex="-1">
+    {# --- CLASE MODIFICADA: modal-md para un ancho intermedio --- #}
+    <div class="modal-dialog modal-dialog-scrollable modal-dialog-centered modal-md">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="detailModalTitle"></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="detailModalBody"></div>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="addOvaModal" tabindex="-1">
+    {# --- CLASE MODIFICADA: modal-md para un ancho intermedio --- #}
+    <div class="modal-dialog modal-dialog-centered modal-md">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Añadir Ovas a <span id="addOvaBastidorCodigo"></span></h5>
+                <button type="button" class="btn-close" data-bs-target="#detailModal" data-bs-toggle="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addOvaForm" autocomplete="off">
+                    <input type="hidden" name="bastidor_id">
+                    <div class="mb-3">
+                        <label for="id_cantidad_total_peces_ova" class="form-label">Cantidad de Ovas</label>
+                        <input type="number" name="cantidad_total_peces" class="form-control" id="id_cantidad_total_peces_ova" required min="1">
+                        <div class="form-text">Capacidad máxima: <span id="addOvaCapacidad"></span></div>
+                    </div>
+                    <div id="addOvaErrors" class="text-danger small mt-2"></div>
+                    <div class="d-flex justify-content-end mt-3">
+                        <button type="button" class="btn btn-light me-2" data-bs-target="#detailModal" data-bs-toggle="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">Guardar Lote</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="actionModal" tabindex="-1">
+    {# --- CLASE MODIFICADA: modal-md para un ancho intermedio --- #}
+    <div class="modal-dialog modal-dialog-centered modal-md">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="actionModalTitle"></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="actionModalBody"></div>
+            <div class="modal-footer d-none" id="actionModalFooter">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="submit" form="actionForm" class="btn btn-primary" id="actionModalSubmitBtn"></button>
+            </div>
+        </div>
+    </div>
+</div>
 
-{# --- SECCIÓN HTML CORREGIDA --- #}
+{# --- SECCIÓN HTML CORREGIDA (Modal de Eliminación) --- #}
 <div class="modal fade" id="confirmDeleteModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
@@ -111,6 +162,45 @@
     </div>
 </div>
 
+<div class="modal fade" id="condicionesModal" tabindex="-1">
+    {# --- CLASE MODIFICADA: modal-md para un ancho intermedio --- #}
+    <div class="modal-dialog modal-dialog-centered modal-md">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Condiciones del Lote <span id="condicionesLoteCodigo"></span></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="condicionesForm" autocomplete="off">
+                    {% csrf_token %}
+                    <input type="hidden" name="lote_id">
+                    <div class="mb-3">
+                        <label for="id_temp_agua_c" class="form-label">Temperatura del Agua (°C)</label>
+                        <input type="number" step="0.1" name="temp_agua_c" class="form-control" id="id_temp_agua_c">
+                    </div>
+                    <div class="mb-3">
+                        <label for="id_ph" class="form-label">Nivel de pH</label>
+                        <input type="number" step="0.1" name="ph" class="form-control" id="id_ph">
+                    </div>
+                    <div class="mb-3">
+                        <label for="id_oxigeno_mg_l" class="form-label">Oxígeno Disuelto (mg/L)</label>
+                        <input type="number" step="0.1" name="oxigeno_mg_l" class="form-control" id="id_oxigeno_mg_l">
+                    </div>
+                    <div class="mb-3">
+                        <label for="id_amoniaco_mg_l" class="form-label">Amoníaco (mg/L)</label>
+                        <input type="number" step="0.01" name="amoniaco_mg_l" class="form-control" id="id_amoniaco_mg_l">
+                    </div>
+                    <div id="condicionesErrors" class="text-danger small mt-2"></div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-light me-2" data-bs-dismiss="modal">Cancelar</button>
+                <button type="submit" form="condicionesForm" class="btn btn-primary">Guardar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 {% endblock %}
 
 
@@ -118,16 +208,22 @@
 {{ block.super }}
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-    // --- INICIALIZACIÓN DE ELEMENTOS (CORREGIDA) ---
+    // --- INICIALIZACIÓN DE ELEMENTOS ---
     const detailModalEl = document.getElementById('detailModal');
     const confirmDeleteModalEl = document.getElementById('confirmDeleteModal');
-    const actionModalEl = document.getElementById('actionModal'); // <-- LÍNEA AÑADIDA
-    if (!detailModalEl || !confirmDeleteModalEl || !actionModalEl) return;
-    
+    const actionModalEl = document.getElementById('actionModal'); 
+    const condicionesModalEl = document.getElementById('condicionesModal');
+
+    if (!detailModalEl || !confirmDeleteModalEl || !actionModalEl || !condicionesModalEl) {
+        console.error("Faltan elementos modales en el DOM. Asegúrate de que los modales están en la plantilla.");
+        return;
+    }
+
     const detailModal = new bootstrap.Modal(detailModalEl);
     const addOvaModal = new bootstrap.Modal(document.getElementById('addOvaModal'));
-    const actionModal = new bootstrap.Modal(actionModalEl); // <-- CORREGIDA
+    const actionModal = new bootstrap.Modal(actionModalEl);
     const confirmDeleteModal = new bootstrap.Modal(confirmDeleteModalEl);
+    const condicionesModal = new bootstrap.Modal(condicionesModalEl);
     
     const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
     const isEtapaFinal = document.querySelector('.list-group').dataset.esEtapaFinal === 'true';
@@ -243,6 +339,14 @@ document.addEventListener('DOMContentLoaded', function () {
                                             </button>
                                             <div class="small mt-1">Finalizar</div>
                                         </div>` : ''}` : ''}
+                                        
+                                        ${tipoUnidad !== 'bastidor' ? `
+                                        <div>
+                                            <button class="btn btn-info rounded-circle d-flex align-items-center justify-content-center action-btn" data-action="abrir-condiciones" data-lote-id="${lote.id}" title="Registrar Condiciones">
+                                                <i class="bi bi-thermometer-half fs-4"></i>
+                                            </button>
+                                            <div class="small mt-1">Condiciones</div>
+                                        </div>` : ''}
                                     </div>
                                 </div>
                             </div>`;
@@ -250,10 +354,10 @@ document.addEventListener('DOMContentLoaded', function () {
                 
                 } else {
                     content = `<div class="text-center p-4">
-                                    <p class="lead">Esta unidad está actualmente vacía.</p>
-                                    <p class="text-muted mb-4">Capacidad Máxima: <strong>${unidad.capacidad_maxima_kg ? unidad.capacidad_maxima_kg.toFixed(2) + ' kg' : (unidad.capacidad_maxima_unidades || '') + ' ovas'}</strong></p>
-                                    ${tipoUnidad === 'bastidor' ? `<button class="btn btn-success btn-lg" data-action="abrir-add-ova" data-unidad-id="${unidad.id}" data-unidad-codigo="${unidad.codigo}" data-unidad-capacidad="${unidad.capacidad_maxima_unidades} ovas"><i class="bi bi-plus-circle me-2"></i>Añadir Ovas</button>` : ''}
-                               </div>`;
+                                <p class="lead">Esta unidad está actualmente vacía.</p>
+                                <p class="text-muted mb-4">Capacidad Máxima: <strong>${unidad.capacidad_maxima_kg ? unidad.capacidad_maxima_kg.toFixed(2) + ' kg' : (unidad.capacidad_maxima_unidades || '') + ' ovas'}</strong></p>
+                                ${tipoUnidad === 'bastidor' ? `<button class="btn btn-success btn-lg" data-action="abrir-add-ova" data-unidad-id="${unidad.id}" data-unidad-codigo="${unidad.codigo}" data-unidad-capacidad="${unidad.capacidad_maxima_unidades} ovas"><i class="bi bi-plus-circle me-2"></i>Añadir Ovas</button>` : ''}
+                           </div>`;
                 }
                 modalBody.innerHTML = content;
                 
@@ -291,22 +395,15 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
-    // --- BLOQUE JAVASCRIPT CORREGIDO --- //
     confirmDeleteModalEl.addEventListener('show.bs.modal', event => {
-        // El botón de la papelera que abrió el modal
-        const button = event.relatedTarget; 
-        
-        // Busca el formulario por su ID dentro del modal que se está mostrando.
-        // Esto es más seguro que buscar en todo el documento.
-        const form = confirmDeleteModalEl.querySelector('#deleteForm'); 
-        
-        // Si se encontraron tanto el botón como el formulario
+        const button = event.relatedTarget;
+        const form = document.getElementById('deleteForm');
         if (button && form) {
-            // Asigna la URL del atributo 'data-form-url' del botón al 'action' del formulario
             form.action = button.dataset.formUrl;
         }
     });
 
+    // --- MANEJO GENERAL DE BOTONES DE ACCIÓN ---
     document.body.addEventListener('click', event => {
         const target = event.target.closest('[data-action]');
         if (!target) return;
@@ -344,8 +441,37 @@ document.addEventListener('DOMContentLoaded', function () {
         else if (action.startsWith('mover-') || action.startsWith('reasignar-')) {
             openActionModal(action, loteId);
         }
+        // NUEVA LÓGICA PARA ABRIR MODAL DE CONDICIONES
+        else if (action === 'abrir-condiciones') {
+            const loteCodigo = target.closest('.mb-3.p-3').querySelector('h5').textContent.split(': ')[1];
+            
+            document.getElementById('condicionesLoteCodigo').textContent = loteCodigo;
+            document.querySelector('#condicionesForm input[name="lote_id"]').value = loteId;
+            document.getElementById('condicionesErrors').textContent = '';
+            
+            fetch(`/produccion/api/lote/${loteId}/get_condiciones/`)
+                .then(res => res.json())
+                .then(data => {
+                    const form = document.getElementById('condicionesForm');
+                    if (data.exists) {
+                        form.elements['temp_agua_c'].value = data.temp_agua_c;
+                        form.elements['ph'].value = data.ph;
+                        form.elements['oxigeno_mg_l'].value = data.oxigeno_mg_l;
+                        form.elements['amoniaco_mg_l'].value = data.amoniaco_mg_l;
+                    } else {
+                        form.reset();
+                    }
+                    detailModal.hide();
+                    condicionesModal.show();
+                })
+                .catch(error => {
+                    console.error('Error fetching conditions:', error);
+                    alert('Error al cargar las condiciones.');
+                });
+        }
     });
 
+    // --- MANEJO DE ENVÍO DE FORMULARIOS ---
     document.body.addEventListener('submit', event => {
         const form = event.target;
         event.preventDefault();
@@ -377,41 +503,39 @@ document.addEventListener('DOMContentLoaded', function () {
         }
         else if (form.id === 'actionForm') {
             const formData = new FormData(form);
-            const cantidadInput = form.querySelector('input[name="cantidad"]');
-
-            if (cantidadInput && cantidadInput.value.trim() === '') {
-                const unidadId = detailModalEl.dataset.unidadId;
-                const tipoUnidad = detailModalEl.dataset.tipoUnidad;
-                
-                // Obtenemos la cantidad total del lote
-                fetch(`/produccion/api/unidad/${tipoUnidad}/${unidadId}/`)
-                    .then(res => res.json())
-                    .then(data => {
-                        const loteId = form.dataset.loteId;
-                        const lote = data.lotes.find(l => l.id == loteId);
-                        if (lote) {
-                            formData.set('cantidad', lote.cantidad_peces);
-                            // Ahora, enviamos el formulario con la cantidad corregida
-                            const submitUrl = form.dataset.submitUrl;
-                            fetch(submitUrl, { method: 'POST', body: formData, headers: {'X-CSRFToken': csrfToken}})
-                                .then(res => res.json())
-                                .then(data => {
-                                    if(data.success) { alert(data.message); window.location.reload(); }
-                                    else document.querySelector('#actionErrors').textContent = data.error;
-                                });
-                        }
-                    });
-            } else {
-                // Si la cantidad se especificó, simplemente enviamos el formulario
-                const submitUrl = form.dataset.submitUrl;
-                if (submitUrl) {
-                    fetch(submitUrl, { method: 'POST', body: formData, headers: {'X-CSRFToken': csrfToken}})
-                        .then(res => res.json()).then(data => { if(data.success) { alert(data.message); window.location.reload(); } else document.querySelector('#actionErrors').textContent = data.error; });
-                }
+            const submitUrl = form.dataset.submitUrl;
+            if (submitUrl) {
+                fetch(submitUrl, { method: 'POST', body: formData, headers: {'X-CSRFToken': csrfToken}})
+                    .then(res => res.json()).then(data => { if(data.success) { alert(data.message); window.location.reload(); } else document.querySelector('#actionErrors').textContent = data.error; });
             }
+        }
+        // NUEVA LÓGICA PARA ENVIAR FORMULARIO DE CONDICIONES
+        else if (form.id === 'condicionesForm') {
+            const formData = new FormData(form);
+            const loteId = formData.get('lote_id');
+
+            fetch(`/produccion/api/lote/${loteId}/save_condiciones/`, {
+                method: 'POST',
+                body: formData,
+                headers: {'X-CSRFToken': csrfToken}
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    alert(data.message);
+                    condicionesModal.hide();
+                } else {
+                    document.getElementById('condicionesErrors').textContent = data.error;
+                }
+            })
+            .catch(error => {
+                console.error('Error submitting conditions:', error);
+                document.getElementById('condicionesErrors').textContent = 'Error al guardar los datos.';
+            });
         }
     });
 
+    // --- MANEJO DE MODAL DE ACCIONES (MOVER/REASIGNAR) ---
     function openActionModal(action, loteId) {
         detailModal.hide();
         const modalTitle = actionModalEl.querySelector('#actionModalTitle');
@@ -509,7 +633,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 const loteId = document.querySelector('[data-action="mover-ova"]')?.dataset.loteId;
                 const artesaId = target.querySelector('input').value;
                 if (loteId && artesaId && confirm('¿Confirmas mover este lote a la artesa seleccionada?')) {
-                    fetch(`/produccion/api/lote/${loteId}/mover_a_artesa/${artesaId}/`, { method: 'POST', headers: {'X-CSRFToken': csrfToken}})
+                     fetch(`/produccion/api/lote/${loteId}/mover_a_artesa/${artesaId}/`, { method: 'POST', headers: {'X-CSRFToken': csrfToken}})
                         .then(res => res.json()).then(data => { if(data.success) { alert(data.message); window.location.reload(); } else alert(data.error); });
                 }
             }
@@ -523,20 +647,46 @@ document.addEventListener('DOMContentLoaded', function () {
 {% block extra_css %}
 {{ block.super }}
 <style>
-.action-btn {
-    width: 60px;
-    height: 60px;
-    position: relative;
+/* El contenedor flex-wrap asegura que los elementos se distribuyan correctamente */
+.acciones-lote-container {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    flex-wrap: wrap; /* Permite que los elementos se muevan a la siguiente línea si no caben */
 }
+
+/* Reducimos el tamaño de los botones para que quepan en una línea */
+.action-btn {
+    width: 48px;  /* Reducido de 60px */
+    height: 48px; /* Reducido de 60px */
+    position: relative;
+    font-size: 1.2rem; /* Reducimos el tamaño de los iconos */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* El texto de "Limpiar" y "Alimentar" se veía bien porque es corto.
+    Ahora lo alineamos y reducimos el tamaño para todos los textos. */
+.action-text {
+    font-size: 0.75rem; /* Tamaño de fuente más pequeño para el texto */
+    margin-top: 0.25rem;
+    text-align: center;
+    line-height: 1; /* Asegura un espaciado consistente */
+    white-space: nowrap; /* Evita que el texto se parta en varias líneas */
+}
+
+/* La marca de verificación se mantiene, pero la ajustamos si es necesario */
 .check-mark {
     position: absolute;
     bottom: 0;
     right: 0;
-    font-size: 1.2rem;
+    font-size: 0.8rem; /* Tamaño más pequeño para la marca de verificación */
     background-color: #198754;
     border-radius: 50%;
     line-height: 1;
 }
+
 .edit-measurement {
     width: 30px;
     height: 30px;
