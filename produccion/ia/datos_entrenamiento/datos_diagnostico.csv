@@ -1,0 +1,11 @@
+fecha,lote_id,temp_agua,ph,oxigeno,amoniaco,sintoma_algodonoso,sintoma_aletas_deshilachadas,comportamiento_anormal,diagnostico_final
+2025-10-01,L2509-009,6.5,7.3,8.0,0.01,0,0,0,Sano
+2025-10-02,L2509-009,6.4,7.3,8.1,0.01,0,0,0,Sano
+2025-10-03,L2509-009,5.2,7.1,7.5,0.15,0,0,1,Sano
+2025-10-04,L2509-009,5.3,7.0,7.6,0.12,1,0,1,Saprolegniasis
+2025-10-05,L2510-001,6.8,7.4,7.9,0.02,0,0,0,Sano
+2025-10-06,L2510-001,6.9,6.8,7.2,0.05,0,1,1,Infeccion_Bacteriana
+2025-10-07,L2511-003,7.0,7.2,5.5,0.20,0,0,1,Estres_por_hipoxia
+2025-10-08,L2510-001,6.8,6.9,7.3,0.04,0,1,1,Infeccion_Bacteriana
+2025-10-09,L2509-009,6.1,7.2,7.8,0.03,1,0,0,Saprolegniasis
+2025-10-10,L2511-003,6.9,7.2,7.9,0.02,0,0,0,Sano

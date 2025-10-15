@@ -169,7 +169,8 @@ class Lote(models.Model):
     jaula = models.ForeignKey('Jaula', on_delete=models.SET_NULL, null=True, blank=True, related_name='lotes')
     
     fecha_ingreso_etapa = models.DateField(default=timezone.now)
-    
+    activo = models.BooleanField(default=True, help_text="Indica si el lote está activo o ha sido finalizado/cerrado")
+
     @property
     def tipo_alimento(self):
         """Determina el tipo de alimento recomendado según la talla."""

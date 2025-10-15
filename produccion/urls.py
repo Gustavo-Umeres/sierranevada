@@ -4,12 +4,12 @@ from . import views
 urlpatterns = [
     # Ruta principal del módulo
     path('', views.dashboard_produccion, name='dashboard-produccion'),
-    
+
     # URLs de Listas de Etapas
     path('ovas/', views.BastidorListView.as_view(), name='bastidor-list'),
     path('alevines/', views.ArtesaListView.as_view(), name='artesa-list'),
     path('juveniles/', views.JuvenilListView.as_view(), name='juvenil-list'),
-    path('engorde/', views.EngordeListView.as_view(), name='engorde-list'), # CORREGIDO
+    path('engorde/', views.EngordeListView.as_view(), name='engorde-list'),
     
     # URLs CRUD para Bastidores (Ovas)
     path('ovas/nuevo/', views.BastidorCreateView.as_view(), name='bastidor-create'),
@@ -55,12 +55,22 @@ urlpatterns = [
     # API Lógica de Reasignación en Jaulas
     path('api/otras_jaulas_disponibles/<int:lote_id_origen>/', views.listar_otras_jaulas_disponibles_json, name='listar-otras-jaulas-disponibles'),
     path('api/lote/<int:lote_origen_id>/reasignar_engorde/', views.reasignar_engorde_json, name='reasignar-engorde'),
+    
+    # --- URLs de Reportes y Dashboards ---
     path('historial/', views.HistorialTrazabilidadView.as_view(), name='historial-trazabilidad'),
     path('historial/exportar/', views.exportar_historial_excel, name='exportar-historial'),
     path('api/dashboard-data/', views.dashboard_data_json, name='dashboard-data-json'),
     path('analitico/', views.dashboard_analitico, name='dashboard-analitico'),
     path('reportes/exportar-lotes/', views.exportar_lotes_excel, name='exportar-lotes-excel'),
-    path('diagnostico/', views.diagnostico_experto_view, name='diagnostico-experto'),
-    path('salud/diagnostico/', views.diagnostico_experto_view, name='diagnostico-experto'),
+
+    # --- URLs Módulo de Salud y Predicción por IA (SECCIÓN CORREGIDA) ---
+    
+    # 1. El modelo antiguo de riesgo general
     path('salud/prediccion/', views.prediccion_salud_view, name='prediccion-salud'),
+    
+    # 2. El sistema experto antiguo basado en síntomas (checkboxes)
+    path('salud/diagnostico-experto/', views.diagnostico_experto_view, name='diagnostico-experto'),
+    
+    # 3. ¡EL NUEVO! El sistema de diagnóstico por lote con IA
+    path('salud/diagnostico/', views.diagnostico_por_lote_view, name='prediccion_diagnostico'),
 ]

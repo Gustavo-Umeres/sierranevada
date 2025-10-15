@@ -1,0 +1,84 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Diagnóstico Asistido por IA</h2>
+    <p>Ingrese los parámetros y síntomas observados en el lote para obtener un diagnóstico probable.</p>
+
+    <div class="card shadow-sm mb-4">
+        <div class="card-header">
+            <h4>Formulario de Observación</h4>
+        </div>
+        <div class="card-body">
+            <form method="post">
+                {% csrf_token %}
+                <div class="row">
+                    <div class="col-md-6">
+                        <h5>Parámetros del Agua</h5>
+                        <div class="mb-3">
+                            <label for="temp_agua" class="form-label">Temperatura del Agua (°C)</label>
+                            <input type="number" step="0.1" class="form-control" id="temp_agua" name="temp_agua" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="ph" class="form-label">Nivel de pH</label>
+                            <input type="number" step="0.1" class="form-control" id="ph" name="ph" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="oxigeno" class="form-label">Oxígeno Disuelto (mg/L)</label>
+                            <input type="number" step="0.1" class="form-control" id="oxigeno" name="oxigeno" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="amoniaco" class="form-label">Amoníaco (mg/L)</label>
+                            <input type="number" step="0.01" class="form-control" id="amoniaco" name="amoniaco" required>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <h5>Síntomas y Comportamiento</h5>
+                        <div class="mb-3">
+                            <label for="sintoma_algodonoso" class="form-label">¿Lesiones algodonosas?</label>
+                            <select class="form-select" name="sintoma_algodonoso" required>
+                                <option value="0">No</option>
+                                <option value="1">Sí</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="sintoma_aletas_deshilachadas" class="form-label">¿Aletas deshilachadas?</label>
+                            <select class="form-select" name="sintoma_aletas_deshilachadas" required>
+                                <option value="0">No</option>
+                                <option value="1">Sí</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="comportamiento_anormal" class="form-label">¿Comportamiento anormal?</label>
+                            <select class="form-select" name="comportamiento_anormal" required>
+                                <option value="0">No</option>
+                                <option value="1">Sí</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary w-100 mt-3">Obtener Diagnóstico</button>
+            </form>
+        </div>
+    </div>
+
+    {% if resultados %}
+    <div class="card shadow-sm">
+        <div class="card-header bg-success text-white">
+            <h4>Resultado del Análisis</h4>
+        </div>
+        <div class="card-body">
+            <h5 class="card-title">Diagnóstico Probable: <span class="fw-bold">{{ diagnostico }}</span></h5>
+            <p class="card-text">Nivel de Confianza: <strong>{{ confianza }}</strong></p>
+            <hr>
+            <h6>Justificación del Sistema:</h6>
+            <p>{{ explicacion }}</p>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if error %}
+    <div class="alert alert-danger mt-4">{{ error }}</div>
+    {% endif %}
+</div>
+{% endblock %}
