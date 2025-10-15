@@ -1,0 +1,366 @@
+{% extends "base.html" %}
+
+{% block content %}
+{% csrf_token %}
+
+<div class="d-flex justify-content-between align-items-center mb-4 border-bottom pb-3">
+    <h1 class="h2">{{ titulo_etapa }}</h1>
+    <a href="{{ add_url }}" class="btn btn-primary"><i class="bi bi-plus-circle me-2"></i>Añadir {{ tipo_unidad_singular }}</a>
+</div>
+
+<div class="list-group" data-es-etapa-final="{{ es_etapa_final|yesno:'true,false' }}">
+    {% for unidad in unidades %}
+        <div class="list-group-item d-flex justify-content-between align-items-center">
+            <button type="button" class="btn btn-link text-start text-decoration-none text-dark flex-grow-1 p-0 border-0"
+                    data-bs-toggle="modal" data-bs-target="#detailModal" 
+                    data-unidad-id="{{ unidad.pk }}" 
+                    data-tipo-unidad="{{ tipo_unidad_slug }}">
+                
+                <div class="d-flex w-100">
+                    <div class="flex-grow-1">
+                        <h5 class="mb-1">{{ unidad }}</h5>
+                        {% if unidad.lote_actual %}
+                            <small class="text-muted">
+                                {% if tipo_unidad_slug == 'bastidor' %}
+                                    Ocupación: <strong>{{ unidad.lote_actual.cantidad_total_peces }} / {{ unidad.capacidad_maxima_unidades }}</strong> ovas
+                                {% else %}
+                                    Biomasa: <strong>{{ unidad.lote_actual.biomasa_kg|floatformat:2 }} / {{ unidad.capacidad_maxima_kg|floatformat:2 }} kg</strong>
+                                {% endif %}
+                            </small>
+                        {% else %}
+                             <small class="text-muted">
+                                {% if tipo_unidad_slug == 'bastidor' %}
+                                    Capacidad: {{ unidad.capacidad_maxima_unidades }} ovas
+                                {% else %}
+                                    Capacidad: {{ unidad.capacidad_maxima_kg|floatformat:2 }} kg
+                                {% endif %}
+                            </small>
+                        {% endif %}
+                    </div>
+                    {% if unidad.lote_actual %}
+                    <div class="text-end ps-3">
+                        <h5 class="mb-1">{{ unidad.lote_actual.codigo_lote }}</h5>
+                        <small class="text-muted">
+                            Talla: <strong>{% if unidad.lote_actual.talla_min_cm %}{{ unidad.lote_actual.talla_min_cm|floatformat:1 }}-{{ unidad.lote_actual.talla_max_cm|floatformat:1 }} cm{% else %}N/A{% endif %}</strong>
+                            |
+                            Peso: <strong>{% if unidad.lote_actual.peso_promedio_pez_gr %}{{ unidad.lote_actual.peso_promedio_pez_gr|floatformat:1 }} g{% else %}N/A{% endif %}</strong>
+                        </small>
+                    </div>
+                    {% endif %}
+                </div>
+            </button>
+            
+            <div class="d-flex align-items-center ps-3">
+                {% if unidad.esta_disponible %}
+                    <span class="badge bg-secondary rounded-pill">Disponible</span>
+                {% else %}
+                    <span class="badge bg-success rounded-pill">Ocupado</span>
+                {% endif %}
+                
+                <div class="btn-group ms-2" role="group">
+                    <a href="{% url update_url_name unidad.pk %}" class="btn btn-sm btn-outline-primary" title="Editar"><i class="bi bi-pencil-fill"></i></a>
+                    <button type="button" class="btn btn-sm btn-outline-danger" title="Eliminar"
+                            data-bs-toggle="modal" data-bs-target="#confirmDeleteModal"
+                            data-form-url="{% url delete_url_name unidad.pk %}">
+                        <i class="bi bi-trash-fill"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    {% empty %}
+        <p class="text-center text-muted mt-4">No hay {{ tipo_unidad_plural|lower }} registradas.</p>
+    {% endfor %}
+</div>
+
+<div class="modal fade" id="detailModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-header"><h5 class="modal-title" id="detailModalTitle"></h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body" id="detailModalBody"></div></div></div></div>
+<div class="modal fade" id="addOvaModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-header"><h5 class="modal-title">Añadir Ovas a <span id="addOvaBastidorCodigo"></span></h5><button type="button" class="btn-close" data-bs-target="#detailModal" data-bs-toggle="modal"></button></div><div class="modal-body"><form id="addOvaForm" autocomplete="off"><input type="hidden" name="bastidor_id"><div class="mb-3"><label for="id_cantidad_total_peces_ova" class="form-label">Cantidad de Ovas</label><input type="number" name="cantidad_total_peces" class="form-control" id="id_cantidad_total_peces_ova" required min="1"><div class="form-text">Capacidad máxima: <span id="addOvaCapacidad"></span></div></div><div id="addOvaErrors" class="text-danger small mt-2"></div><div class="d-flex justify-content-end mt-3"><button type="button" class="btn btn-light me-2" data-bs-target="#detailModal" data-bs-toggle="modal">Cancelar</button><button type="submit" class="btn btn-primary">Guardar Lote</button></div></form></div></div></div></div>
+<div class="modal fade" id="actionModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-header"><h5 class="modal-title" id="actionModalTitle"></h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body" id="actionModalBody"></div><div class="modal-footer d-none" id="actionModalFooter"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button><button type="submit" class="btn btn-primary" id="actionModalSubmitBtn"></button></div></div></div></div>
+<div class="modal fade" id="confirmDeleteModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-header"><h5 class="modal-title">Confirmar Eliminación</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><p>¿Estás seguro de que quieres eliminar este elemento? Esta acción no se puede deshacer.</p></div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button><form id="deleteForm" method="post"><button type="submit" class="btn btn-danger">Eliminar</button></form></div></div></div></div>
+{% endblock %}
+
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const detailModalEl = document.getElementById('detailModal');
+    const confirmDeleteModalEl = document.getElementById('confirmDeleteModal');
+    if (!detailModalEl || !confirmDeleteModalEl) return;
+    
+    const detailModal = new bootstrap.Modal(detailModalEl);
+    const addOvaModal = new bootstrap.Modal(document.getElementById('addOvaModal'));
+    const actionModal = new bootstrap.Modal(document.getElementById('actionModal'));
+    const confirmDeleteModal = new bootstrap.Modal(confirmDeleteModalEl);
+    
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    const isEtapaFinal = document.querySelector('.list-group').dataset.esEtapaFinal === 'true';
+
+    // Función para refrescar el contenido del modal de detalles
+    function refreshModalContent(unidadId, tipoUnidad) {
+        const modalBody = detailModalEl.querySelector('#detailModalBody');
+        const modalTitle = detailModalEl.querySelector('#detailModalTitle');
+        
+        modalTitle.textContent = `Detalle de ${tipoUnidad.charAt(0).toUpperCase() + tipoUnidad.slice(1)}`;
+        modalBody.innerHTML = '<div class="text-center p-3"><div class="spinner-border" role="status"><span class="visually-hidden">Cargando...</span></div></div>';
+        
+        fetch(`/produccion/api/unidad/${tipoUnidad}/${unidadId}/`, { cache: 'no-store' })
+            .then(response => {
+                if (!response.ok) throw new Error('Network response was not ok');
+                return response.json();
+            })
+            .then(data => {
+                let content = '';
+                if (data.lote) {
+                    content += `
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">Lote: ${data.lote.codigo}</h5>
+                            <span class="badge bg-info-subtle text-info-emphasis rounded-pill">Días: ${data.lote.dias_en_etapa}</span>
+                        </div>
+                        <hr class="my-3">
+                        <ul class="list-group list-group-flush mb-3">
+                            <li class="list-group-item d-flex justify-content-between align-items-center ps-0"><span><i class="bi bi-box-seam me-2 text-muted"></i>Cantidad</span><strong id="loteCantidad">${data.lote.cantidad}</strong></li>
+                            ${(tipoUnidad !== 'bastidor' && data.lote.peso_promedio_pez_gr) ? `<li class="list-group-item d-flex justify-content-between align-items-center ps-0"><span><i class="bi bi-stack me-2 text-muted"></i>Biomasa</span><strong>${((data.lote.cantidad * data.lote.peso_promedio_pez_gr)/1000).toFixed(2)} kg</strong></li>` : ''}
+                            <li class="list-group-item d-flex justify-content-between align-items-center ps-0"><span><i class="bi bi-bounding-box-circles me-2 text-muted"></i>Capacidad Máxima</span><strong>${data.unidad.capacidad}</strong></li>
+                            ${(tipoUnidad !== 'bastidor') ? `<li class="list-group-item d-flex justify-content-between align-items-center ps-0"><span><i class="bi bi-egg-fried me-2 text-muted"></i>Alimento Diario</span><strong id="alimentoDiario">${data.lote.alimento_diario} gr</strong></li>` : ''}
+                        </ul>`;
+                    
+                    if (tipoUnidad !== 'bastidor') {
+                        content += `<hr class="my-3"><div id="tallaSection" class="mb-3"><h6>Tallaje (cm)</h6></div><div id="pesoSection" class="mb-3"><h6>Pesaje (gramos)</h6></div>`;
+                    }
+                    
+                    content += `<hr class="my-3"><form id="mortalidadForm" data-lote-id="${data.lote.id}"><label class="form-label small">Registrar Bajas</label><div class="input-group"><input type="number" name="cantidad" class="form-control" placeholder="N° de muertos" required min="1"><button type="submit" class="btn btn-danger">Registrar</button></div><div id="mortalidadErrors" class="small text-danger mt-1"></div></form>`;
+
+                    content += `<div class="mt-4 text-center"><h6 class="text-muted small text-uppercase">Acciones</h6><div class="d-flex justify-content-center gap-3 mt-3">`;
+                    const limpiezaClass = data.lote.limpieza_hoy ? 'btn-success' : 'btn-outline-secondary';
+                    content += `<div><button class="btn ${limpiezaClass} rounded-circle p-0 d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;" data-action="marcar-tarea" data-tarea="limpieza" data-lote-id="${data.lote.id}" title="Limpiar"><i class="bi bi-snow fs-5"></i></button><div class="small mt-1">Limpiar</div></div>`;
+
+                    if (tipoUnidad === 'bastidor') {
+                        const moverDisabled = data.lote.dias_en_etapa < 15 ? 'disabled' : '';
+                        content += `<div><button class="btn btn-primary rounded-circle p-0 d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;" data-action="mover-ova" data-lote-id="${data.lote.id}" title="Mover a Artesa (a los 15 días)" ${moverDisabled}><i class="bi bi-arrows-move fs-5"></i></button><div class="small mt-1">Mover</div></div>`;
+                    } else {
+                        const comidaClass = data.lote.alimentacion_hoy ? 'btn-success' : 'btn-outline-secondary';
+                        content += `<div><button class="btn ${comidaClass} rounded-circle p-0 d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;" data-action="marcar-tarea" data-tarea="alimentacion" data-lote-id="${data.lote.id}" title="Alimentar"><i class="bi bi-tropical-fish fs-5"></i></button><div class="small mt-1">Alimentar</div></div>`;
+                        if (tipoUnidad === 'artesa') {
+                            content += `<div><button class="btn btn-primary rounded-circle p-0 d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;" data-action="mover-alevin" data-lote-id="${data.lote.id}" title="Mover a Jaula"><i class="bi bi-arrows-move fs-5"></i></button><div class="small mt-1">Mover</div></div>`;
+                            content += `<div><button class="btn btn-warning rounded-circle p-0 d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;" data-action="reasignar-alevin" data-lote-id="${data.lote.id}" title="Reasignar a otra Artesa"><i class="bi bi-distribute-vertical fs-5"></i></button><div class="small mt-1">Reasignar</div></div>`;
+                        } else if (tipoUnidad === 'jaula') {
+                            content += `<div><button class="btn btn-warning rounded-circle p-0 d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;" data-action="reasignar-engorde" data-lote-id="${data.lote.id}" title="Reasignar a otra Jaula"><i class="bi bi-distribute-vertical fs-5"></i></button><div class="small mt-1">Reasignar</div></div>`;
+                            if (isEtapaFinal && data.lote.peso_promedio_pez_gr >= 125 && data.lote.talla_max_cm >= 25) {
+                                content += `<div><button class="btn btn-success rounded-circle p-0 d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;" data-action="finalizar-lote" data-lote-id="${data.lote.id}" title="Finalizar Lote"><i class="bi bi-check-circle-fill fs-5"></i></button><div class="small mt-1">Finalizar</div></div>`;
+                            }
+                        }
+                    }
+                    content += `</div></div>`;
+                } else {
+                    content = `<div class="text-center p-3"><p class="lead">Esta unidad está disponible.</p>`;
+                    if (tipoUnidad === 'bastidor') {
+                        content += `<button class="btn btn-success btn-lg" data-action="abrir-add-ova" data-unidad-id="${data.unidad.id}" data-unidad-codigo="${data.unidad.codigo}" data-unidad-capacidad="${data.unidad.capacidad}"><i class="bi bi-plus-circle me-2"></i>Añadir Ovas</button>`;
+                    }
+                    content += `</div>`;
+                }
+                modalBody.innerHTML = content;
+                
+                if (data.lote && tipoUnidad !== 'bastidor') {
+                    const tallaSection = modalBody.querySelector('#tallaSection');
+                    let tallaFormHTML = `<form id="tallaForm" class="d-none" data-lote-id="${data.lote.id}"><div class="row g-2 align-items-center"><div class="col"><div class="input-group"><input type="number" step="0.1" name="talla_min_cm" class="form-control" placeholder="Desde" value="${data.lote.talla_min_cm || ''}" required><input type="number" step="0.1" name="talla_max_cm" class="form-control" placeholder="Hasta" value="${data.lote.talla_max_cm || ''}" required></div></div><div class="col-auto"><button type="submit" class="btn btn-primary">Guardar</button></div></div><div class="small text-danger mt-1"></div></form>`;
+                    if (data.lote.talla_min_cm) {
+                        tallaSection.innerHTML += `<div id="tallaWrapper" class="d-flex justify-content-between align-items-center"><span>Rango actual: <strong>${data.lote.talla_min_cm} - ${data.lote.talla_max_cm} cm</strong></span><button class="btn btn-sm btn-outline-secondary" data-action="mostrar-form" data-form="talla"><i class="bi bi-pencil"></i></button></div>${tallaFormHTML}`;
+                    } else {
+                        tallaSection.innerHTML += `<div id="tallaWrapper"><button class="btn btn-info w-100" data-action="mostrar-form" data-form="talla"><i class="bi bi-rulers me-2"></i>Realizar Medición</button></div>${tallaFormHTML}`;
+                    }
+                    const pesoSection = modalBody.querySelector('#pesoSection');
+                    let pesoFormHTML = `<form id="pesoForm" class="d-none" data-lote-id="${data.lote.id}"><div class="row g-2 align-items-center"><div class="col"><input type="number" step="0.1" name="peso_promedio_pez_gr" class="form-control" placeholder="Peso (g)" value="${data.lote.peso_promedio_pez_gr || ''}" required></div><div class="col-auto"><button type="submit" class="btn btn-primary">Guardar</button></div></div><div class="small text-danger mt-1"></div></form>`;
+                    if (data.lote.peso_promedio_pez_gr) {
+                        pesoSection.innerHTML += `<div id="pesoWrapper" class="d-flex justify-content-between align-items-center"><span>Peso promedio: <strong>${data.lote.peso_promedio_pez_gr} g</strong></span><button class="btn btn-sm btn-outline-secondary" data-action="mostrar-form" data-form="peso"><i class="bi bi-pencil"></i></button></div>${pesoFormHTML}`;
+                    } else {
+                        pesoSection.innerHTML += `<div id="pesoWrapper"><button class="btn btn-info w-100" data-action="mostrar-form" data-form="peso"><i class="bi bi-activity me-2"></i>Realizar Pesaje</button></div>${pesoFormHTML}`;
+                    }
+                }
+            })
+            .catch(error => {
+                modalBody.innerHTML = `<div class="alert alert-danger">Error al cargar los detalles.</div>`;
+                console.error("Error en fetch:", error);
+            });
+    }
+
+    // Listener para abrir el modal de detalles
+    detailModalEl.addEventListener('show.bs.modal', function (event) {
+        const button = event.relatedTarget;
+        if (button?.dataset.unidadId && button?.dataset.tipoUnidad) {
+            detailModalEl.dataset.unidadId = button.dataset.unidadId;
+            detailModalEl.dataset.tipoUnidad = button.dataset.tipoUnidad;
+            refreshModalContent(button.dataset.unidadId, button.dataset.tipoUnidad);
+        }
+    });
+
+    // Listener para abrir el modal de eliminación
+    confirmDeleteModalEl.addEventListener('show.bs.modal', function(event) {
+        const button = event.relatedTarget;
+        const form = confirmDeleteModalEl.querySelector('#deleteForm');
+        form.action = button.dataset.formUrl;
+        // Se necesita agregar el token CSRF al formulario de eliminación
+        let csrfInput = form.querySelector('input[name="csrfmiddlewaretoken"]');
+        if (!csrfInput) {
+            csrfInput = document.createElement('input');
+            csrfInput.type = 'hidden';
+            csrfInput.name = 'csrfmiddlewaretoken';
+            csrfInput.value = csrfToken;
+            form.appendChild(csrfInput);
+        }
+    });
+
+    // Delegado de eventos principal para todas las acciones de click
+    document.body.addEventListener('click', function(event) {
+        const target = event.target.closest('[data-action]');
+        if (!target) return;
+
+        const action = target.dataset.action;
+        const loteId = target.dataset.loteId;
+        
+        if (action === 'abrir-add-ova') {
+            document.querySelector('#addOvaBastidorCodigo').textContent = target.dataset.unidadCodigo;
+            document.querySelector('#addOvaCapacidad').textContent = target.dataset.unidadCapacidad;
+            document.querySelector('#addOvaForm input[name="bastidor_id"]').value = target.dataset.unidadId;
+            document.querySelector('#addOvaForm').reset();
+            document.querySelector('#addOvaErrors').textContent = '';
+            detailModal.hide();
+            addOvaModal.show();
+        }
+        else if (action === 'marcar-tarea') {
+            fetch(`/produccion/api/lote/${loteId}/marcar_tarea/${target.dataset.tarea}/`, { method: 'POST', headers: {'X-CSRFToken': csrfToken} })
+                .then(res => res.json()).then(data => { if (data.success) { target.classList.remove('btn-outline-secondary'); target.classList.add('btn-success'); } });
+        }
+        else if (action === 'mostrar-form') {
+            target.closest('div').classList.add('d-none');
+            document.getElementById(`${target.dataset.form}Form`).classList.remove('d-none');
+        }
+        else if (action.startsWith('mover-') || action.startsWith('reasignar-')) {
+            openActionModal(action, loteId);
+        }
+        else if (action === 'finalizar-lote') {
+            if (confirm('¿Estás seguro de que quieres finalizar este lote? La jaula quedará disponible.')) {
+                fetch(`/produccion/api/lote/${loteId}/finalizar/`, { method: 'POST', headers: {'X-CSRFToken': csrfToken} })
+                    .then(res => res.json()).then(data => { if (data.success) { alert(data.message); window.location.reload(); } else alert(data.error); });
+            }
+        }
+    });
+
+    // Función para abrir y configurar el modal de acciones (mover/reasignar)
+    function openActionModal(action, loteId) {
+        detailModal.hide();
+        const modalTitle = actionModal._element.querySelector('#actionModalTitle');
+        const modalBody = actionModal._element.querySelector('#actionModalBody');
+        const modalFooter = actionModal._element.querySelector('#actionModalFooter');
+        const submitBtn = actionModal._element.querySelector('#actionModalSubmitBtn');
+
+        modalBody.innerHTML = '<div class="text-center"><div class="spinner-border"></div></div>';
+        modalFooter.classList.add('d-none');
+        actionModal.show();
+
+        let config = {};
+        switch (action) {
+            case 'mover-ova':
+                config = { title: 'Mover Lote a Artesa', fetchUrl: `/produccion/api/artesas_disponibles/${loteId}/`, submitUrl: null, showQuantity: false, destName: 'artesa_destino' };
+                break;
+            case 'mover-alevin':
+                config = { title: 'Mover Alevines a Jaula', fetchUrl: `/produccion/api/jaulas_disponibles/${loteId}/`, submitUrl: `/produccion/api/lote/${loteId}/mover_a_jaula/`, showQuantity: true, destName: 'jaula_destino' };
+                break;
+            case 'reasignar-alevin':
+                config = { title: 'Reasignar a otra Artesa', fetchUrl: `/produccion/api/artesas_disponibles/${loteId}/`, submitUrl: `/produccion/api/lote/${loteId}/reasignar_alevines/`, showQuantity: true, destName: 'artesa_destino' };
+                break;
+            case 'reasignar-engorde':
+                 config = { title: 'Reasignar a otra Jaula', fetchUrl: `/produccion/api/otras_jaulas_disponibles/${loteId}/`, submitUrl: `/produccion/api/lote/${loteId}/reasignar_engorde/`, showQuantity: true, destName: 'jaula_destino' };
+                break;
+        }
+
+        modalTitle.textContent = config.title;
+        submitBtn.textContent = config.showQuantity ? 'Confirmar' : 'Mover';
+
+        fetch(config.fetchUrl)
+            .then(res => res.json())
+            .then(unidades => {
+                if (unidades.length === 0) {
+                    modalBody.innerHTML = '<div class="alert alert-warning">No hay unidades de destino disponibles.</div>';
+                    return;
+                }
+                let formContent = `<form id="actionForm" data-submit-url="${config.submitUrl || ''}">
+                    <p>1. Selecciona una unidad de destino:</p>
+                    <div class="list-group mb-3">`;
+                unidades.forEach(u => {
+                    let capacidad = u.capacidad_maxima_kg ? `${u.capacidad_maxima_kg} kg` : `${u.capacidad_maxima_unidades}`;
+                    formContent += `<label class="list-group-item list-group-item-action"><input class="form-check-input me-2" type="radio" name="${config.destName}" value="${u.id}" required><strong>${u.codigo}</strong> - Cap: ${capacidad}</label>`;
+                });
+                formContent += `</div>`;
+                if (config.showQuantity) {
+                    formContent += `<div class="mb-3"><label class="form-label">2. Cantidad a mover</label><input type="number" name="cantidad" class="form-control" required min="1"></div>`;
+                }
+                formContent += `<div class="text-danger small" id="actionErrors"></div></form>`;
+                modalBody.innerHTML = formContent;
+
+                if (config.submitUrl) {
+                    modalFooter.classList.remove('d-none');
+                }
+            });
+    }
+
+    // Listener para el botón de submit del modal de acción
+    document.getElementById('actionModalSubmitBtn').addEventListener('click', () => {
+        const form = document.getElementById('actionForm');
+        if (form) form.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+    });
+    
+    // Delegado de eventos para todos los formularios
+    document.body.addEventListener('submit', function(event) {
+        const form = event.target;
+        event.preventDefault();
+
+        if (form.id === 'addOvaForm') {
+            const formData = new FormData(form);
+            const bastidorId = formData.get('bastidor_id');
+            fetch(`/produccion/api/lote/ova/crear/${bastidorId}/`, { method: 'POST', body: formData, headers: {'X-CSRFToken': csrfToken}})
+                .then(res => res.json()).then(data => { if(data.success) { alert(data.message); window.location.reload(); } else { document.querySelector('#addOvaErrors').textContent = data.error; }});
+        }
+        else if (form.id === 'mortalidadForm') {
+            const formData = new FormData(form);
+            fetch(`/produccion/api/lote/${form.dataset.loteId}/registrar_mortalidad/`, { method: 'POST', body: formData, headers: {'X-CSRFToken': csrfToken}})
+                .then(res => res.json()).then(data => {
+                    if (data.success) {
+                        refreshModalContent(detailModalEl.dataset.unidadId, detailModalEl.dataset.tipoUnidad);
+                    } else { form.querySelector('#mortalidadErrors').textContent = data.error || 'Error desconocido'; }
+                });
+        }
+        else if (form.id === 'tallaForm' || form.id === 'pesoForm') {
+            const formData = new FormData(form);
+            const url = (form.id === 'tallaForm') ? `/produccion/api/lote/${form.dataset.loteId}/definir_talla/` : `/produccion/api/lote/${form.dataset.loteId}/definir_peso/`;
+            fetch(url, { method: 'POST', body: formData, headers: {'X-CSRFToken': csrfToken}})
+                .then(res => res.json()).then(data => {
+                    if (data.success) {
+                        refreshModalContent(detailModalEl.dataset.unidadId, detailModalEl.dataset.tipoUnidad);
+                    } else { form.querySelector('.text-danger').textContent = data.error; }
+                });
+        }
+        else if (form.id === 'actionForm') {
+            const formData = new FormData(form);
+            const submitUrl = form.dataset.submitUrl;
+            if (submitUrl) {
+                fetch(submitUrl, { method: 'POST', body: formData, headers: {'X-CSRFToken': csrfToken}})
+                    .then(res => res.json()).then(data => { if(data.success) { alert(data.message); window.location.reload(); } else document.querySelector('#actionErrors').textContent = data.error; });
+            }
+        }
+    });
+
+    // Listener especial para el click en la lista de artesas (acción directa de mover ova)
+    document.getElementById('actionModalBody').addEventListener('click', function(event) {
+        const target = event.target.closest('label');
+        const form = target?.closest('form');
+        if (target && form && !form.dataset.submitUrl) { // Caso especial de 'mover-ova'
+            const loteId = document.querySelector('[data-action="mover-ova"]')?.dataset.loteId;
+            const artesaId = target.querySelector('input').value;
+            if (loteId && artesaId && confirm('¿Confirmas mover este lote a la artesa seleccionada?')) {
+                 fetch(`/produccion/api/lote/${loteId}/mover_a_artesa/${artesaId}/`, { method: 'POST', headers: {'X-CSRFToken': csrfToken}})
+                    .then(res => res.json()).then(data => { if(data.success) { alert(data.message); window.location.reload(); } else alert(data.error); });
+            }
+        }
+    });
+});
+</script>
+{% endblock scripts %}

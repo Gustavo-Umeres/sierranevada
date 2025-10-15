@@ -1,0 +1,303 @@
+{% extends "base.html" %}
+
+{% block content %}
+{% csrf_token %}
+
+<div class="d-flex justify-content-between align-items-center mb-4 border-bottom pb-3">
+    <h1 class="h2">{{ titulo_etapa|default:"Gestión de Jaulas" }}</h1>
+    <a href="{% url 'jaula-create' %}" class="btn btn-primary"><i class="bi bi-plus-circle me-2"></i>Añadir Jaula</a>
+</div>
+
+<div class="list-group">
+    {% for unidad in unidades %}
+        <div class="list-group-item d-flex justify-content-between align-items-center">
+              <button type="button" class="btn btn-link text-start text-decoration-none text-dark flex-grow-1 p-0 border-0"
+                      data-bs-toggle="modal" data-bs-target="#detailModal" 
+                      data-unidad-id="{{ unidad.pk }}">
+                <div class="d-flex w-100">
+                    <div class="flex-grow-1">
+                        <h5 class="mb-1">{{ unidad.codigo }}</h5>
+                        {% if not unidad.lote_actual %}
+                            <small class="text-muted">Capacidad: {{ unidad.capacidad_maxima_unidades }} peces</small>
+                        {% endif %}
+                    </div>
+                    <div class="text-end">
+                        {% if unidad.lote_actual %}
+                            <h5 class="mb-1">{{ unidad.lote_actual.codigo_lote }}</h5>
+                            <small class="text-muted">
+                                <strong>{{ unidad.lote_actual.cantidad_total_peces }} / {{ unidad.capacidad_maxima_unidades }}</strong> peces
+                                {% if unidad.lote_actual.peso_promedio_pez_gr %}
+                                    | Biomasa: <strong>{{ unidad.lote_actual.biomasa_kg|floatformat:2 }} kg</strong>
+                                {% endif %}
+                                <br>
+                                Talla: <strong>{% if unidad.lote_actual.talla_min_cm %}{{ unidad.lote_actual.talla_min_cm|floatformat:1 }}-{{ unidad.lote_actual.talla_max_cm|floatformat:1 }} cm{% else %}Sin medir{% endif %}</strong>
+                            </small>
+                        {% endif %}
+                    </div>
+                </div>
+            </button>
+            <div class="d-flex align-items-center">
+                {% if unidad.esta_disponible %}
+                    <span class="badge bg-success rounded-pill ms-3">Disponible</span>
+                {% else %}
+                    <span class="badge bg-secondary rounded-pill ms-3">Ocupado</span>
+                {% endif %}
+                <div class="btn-group ms-2" role="group">
+                    <a href="{% url 'jaula-update' unidad.pk %}" class="btn btn-sm btn-outline-primary" title="Editar"><i class="bi bi-pencil-fill"></i></a>
+                    <button type="button" class="btn btn-sm btn-outline-danger" title="Eliminar"
+                            data-bs-toggle="modal" data-bs-target="#confirmDeleteModal"
+                            data-form-url="{% url 'jaula-delete' unidad.pk %}">
+                        <i class="bi bi-trash-fill"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    {% empty %}
+        <p class="text-center text-muted mt-4">No hay jaulas de este tipo registradas.</p>
+    {% endfor %}
+</div>
+
+<div class="modal fade" id="detailModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-header"><h5 class="modal-title" id="detailModalTitle">Detalle</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body" id="detailModalBody"></div></div></div></div>
+
+<div class="modal fade" id="reallocateJaulaModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Reasignar Peces</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="reallocateJaulaForm">
+                <div class="modal-body">
+                    <div class="mb-3" id="reallocateJaulaList">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Cantidad a Mover</label>
+                        <input type="number" name="cantidad" class="form-control" required min="1" placeholder="N° de peces a reasignar">
+                    </div>
+                    <div id="reallocateJaulaErrors" class="text-danger small"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Reasignar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="confirmDeleteModal" tabindex="-1" aria-hidden="true">
+    </div>
+
+{% endblock %}
+
+{% block scripts %}
+{{ block.super }}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const detailModalEl = document.getElementById('detailModal');
+    if (!detailModalEl) return;
+    
+    const initModal = (id) => {
+        const el = document.getElementById(id);
+        return el ? new bootstrap.Modal(el) : null;
+    };
+
+    const detailModal = new bootstrap.Modal(detailModalEl);
+    const reallocateModal = initModal('reallocateJaulaModal');
+    
+    const csrfToken = document.querySelector('input[name=csrfmiddlewaretoken]').value;
+
+    function refreshModalContent(unidadId) {
+        const modalBody = detailModalEl.querySelector('.modal-body');
+        const modalTitle = detailModalEl.querySelector('.modal-title');
+        modalTitle.textContent = `Detalle de Jaula`;
+        modalBody.innerHTML = '<div class="text-center p-3"><div class="spinner-border spinner-border-sm" role="status"></div> Cargando...</div>';
+        
+        // La variable 'tipo_unidad' es inyectada por la vista de Django.
+        const tipoUnidad = '{{ tipo_unidad }}'; 
+        fetch(`/produccion/api/unidad/${tipoUnidad}/${unidadId}/`, { cache: 'reload' })
+            .then(response => response.json())
+            .then(data => {
+                let content = '';
+                if (data.lote) {
+                    const dias = data.lote.dias_en_etapa;
+                    const comidaClass = data.lote.alimentacion_hoy ? 'btn-success' : 'btn-outline-secondary';
+                    const limpiezaClass = data.lote.limpieza_hoy ? 'btn-success' : 'btn-outline-secondary';
+                    
+                    let detailsList = `<li class="list-group-item d-flex justify-content-between align-items-center ps-0"><span><i class="bi bi-box-seam me-2 text-muted"></i>Cantidad Total</span><strong id="loteCantidad">${data.lote.cantidad}</strong></li>`;
+                    
+                    if (data.lote.peso_promedio_pez_gr && data.lote.peso_promedio_pez_gr > 0) {
+                        const biomasaKg = (data.lote.cantidad * data.lote.peso_promedio_pez_gr) / 1000;
+                        detailsList += `<li class="list-group-item d-flex justify-content-between align-items-center ps-0"><span><i class="bi bi-stack me-2 text-muted"></i>Biomasa Estimada</span><strong>${biomasaKg.toFixed(2)} kg</strong></li>`;
+                    }
+                    
+                    detailsList += `<li class="list-group-item d-flex justify-content-between align-items-center ps-0"><span><i class="bi bi-bounding-box-circles me-2 text-muted"></i>Capacidad Máxima</span><strong>${data.unidad.capacidad}</strong></li>`;
+                    detailsList += `<li class="list-group-item d-flex justify-content-between align-items-center ps-0"><span><i class="bi bi-egg-fried me-2 text-muted"></i>Alimento Diario</span><strong id="alimentoDiarioDisplay">${data.lote.alimento_diario} kg/día</strong></li>`;
+
+                    content = `<div class="d-flex justify-content-between align-items-center"><h5 class="mb-0">Lote: ${data.lote.codigo}</h5><span class="badge bg-info-subtle text-info-emphasis rounded-pill">Días: ${dias}</span></div><hr class="my-3"><ul class="list-group list-group-flush mb-3">${detailsList}</ul>`;
+                    
+                    content += '<hr class="my-3"><div id="tallaSection" class="mb-3"><h6>Tallaje de Engorde</h6>';
+                    let tallaFormHTML = `<form id="tallaForm" class="d-none" data-lote-id="${data.lote.id}"><div class="row g-2 align-items-center"><div class="col"><label class="form-label small">Talla (cm)</label><div class="input-group"><input type="number" step="0.1" name="talla_min_cm" class="form-control" placeholder="Desde" value="${data.lote.talla_min_cm || ''}" required><input type="number" step="0.1" name="talla_max_cm" class="form-control" placeholder="Hasta" value="${data.lote.talla_max_cm || ''}" required></div></div><div class="col-auto align-self-end"><button type="submit" class="btn btn-primary">Guardar</button></div></div><div id="tallaErrors" class="text-danger small mt-1"></div></form>`;
+                    if (data.lote.talla_min_cm && data.lote.talla_max_cm) {
+                        content += `<div id="tallaWrapper" class="d-flex justify-content-between align-items-center"><span>Rango actual: <strong>${data.lote.talla_min_cm} - ${data.lote.talla_max_cm} cm</strong></span><button class="btn btn-sm btn-outline-secondary" id="showTallaFormBtn"><i class="bi bi-pencil"></i></button></div>${tallaFormHTML}`;
+                    } else {
+                        content += `<div id="tallaWrapper"><button class="btn btn-info w-100" id="showTallaFormBtn"><i class="bi bi-rulers me-2"></i>Realizar Medición</button></div>${tallaFormHTML}`;
+                    }
+                    content += '</div>';
+
+                    content += '<div id="pesoSection" class="mb-3"><h6>Pesaje (gramos)</h6>';
+                    let pesoFormHTML = `<form id="pesoForm" class="d-none" data-lote-id="${data.lote.id}"><div class="row g-2 align-items-center"><div class="col"><label class="form-label small">Peso Promedio (g)</label><input type="number" step="0.1" name="peso_promedio_pez_gr" class="form-control" placeholder="Peso (g)" value="${data.lote.peso_promedio_pez_gr || ''}" required></div><div class="col-auto align-self-end"><button type="submit" class="btn btn-primary">Guardar</button></div></div><div id="pesoErrors" class="text-danger small mt-1"></div></form>`;
+                    if (data.lote.peso_promedio_pez_gr) {
+                        content += `<div id="pesoWrapper" class="d-flex justify-content-between align-items-center"><span>Peso promedio actual: <strong>${data.lote.peso_promedio_pez_gr} g</strong></span><button class="btn btn-sm btn-outline-secondary" id="showPesoFormBtn"><i class="bi bi-pencil"></i></button></div>${pesoFormHTML}`;
+                    } else {
+                        content += `<div id="pesoWrapper"><button class="btn btn-info w-100" id="showPesoFormBtn"><i class="bi bi-rulers me-2"></i>Realizar Pesaje</button></div>${pesoFormHTML}`;
+                    }
+                    content += '</div>';
+                    
+                    content += `<hr class="my-3"><form id="mortalidadForm" data-lote-id="${data.lote.id}" autocomplete="off" class="mb-3"><label class="form-label small">Registrar Bajas</label><div class="input-group"><span class="input-group-text"><i class="bi bi-heartbreak-fill"></i></span><input type="number" name="cantidad" class="form-control" placeholder="N° de muertos" required min="1"><button type="submit" class="btn btn-danger">Registrar</button></div><div id="mortalidadErrors" class="small mt-1"></div></form>`;
+
+                    content += `<div class="mt-4 text-center"><h6 class="text-muted small text-uppercase">Acciones</h6><div class="d-flex justify-content-center gap-3 mt-3"><div><button class="btn ${comidaClass} rounded-circle d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;" data-tarea="alimentacion" data-lote-id="${data.lote.id}" title="Alimentar"><i class="bi bi-tropical-fish fs-5"></i></button><div class="small mt-1">Alimentar</div></div><div><button class="btn ${limpiezaClass} rounded-circle d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;" data-tarea="limpieza" data-lote-id="${data.lote.id}" title="Limpiar"><i class="bi bi-snow fs-5"></i></button><div class="small mt-1">Limpiar</div></div><div><button class="btn btn-warning rounded-circle d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;" id="openReallocateJaulaBtn" data-lote-id="${data.lote.id}" title="Reasignar Peces"><i class="bi bi-distribute-vertical fs-5"></i></button><div class="small mt-1">Reasignar</div></div>`;
+                    
+                    // Este bloque de código solo se renderiza si la vista pasa es_etapa_final = True
+                    {% if es_etapa_final %}
+                    if (data.lote.talla_max_cm >= 25 && data.lote.peso_promedio_pez_gr >= 270) {
+                        content += `<div><button class="btn btn-success rounded-circle d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;" id="finishLoteBtn" data-lote-id="${data.lote.id}" title="Finalizar Lote"><i class="bi bi-check-circle-fill fs-5"></i></button><div class="small mt-1">Finalizar</div></div>`;
+                    }
+                    {% endif %}
+
+                    content += `</div></div>`;
+                } else {
+                    content = `<div class="text-center p-3"><p class="lead">Esta unidad está disponible.</p></div>`;
+                }
+                modalBody.innerHTML = content;
+            });
+    }
+
+    // El resto de tu JavaScript...
+    detailModalEl.addEventListener('show.bs.modal', function (event) {
+        const button = event.relatedTarget;
+        if (button && button.hasAttribute('data-unidad-id')) {
+            detailModalEl.dataset.unidadId = button.dataset.unidadId;
+            refreshModalContent(button.dataset.unidadId);
+        }
+    });
+
+    document.body.addEventListener('click', function(event) {
+        const button = event.target.closest('button');
+        if (!button) return;
+        
+        const tareaButton = button.closest('[data-tarea]');
+        if (tareaButton) {
+            const loteId = tareaButton.dataset.loteId;
+            const tarea = tareaButton.dataset.tarea;
+            fetch(`/produccion/api/lote/${loteId}/marcar_tarea/${tarea}/`, { method: 'POST', headers: {'X-CSRFToken': csrfToken} })
+            .then(response => response.json())
+            .then(data => { if (data.success) { tareaButton.classList.remove('btn-outline-secondary'); tareaButton.classList.add('btn-success'); tareaButton.blur(); }});
+        }
+        if (button.id === 'showTallaFormBtn') {
+            document.getElementById('tallaWrapper').classList.add('d-none');
+            document.getElementById('tallaForm').classList.remove('d-none');
+        }
+        if (button.id === 'showPesoFormBtn') {
+            document.getElementById('pesoWrapper').classList.add('d-none');
+            document.getElementById('pesoForm').classList.remove('d-none');
+        }
+        
+        if (button.id === 'openReallocateJaulaBtn' && reallocateModal) {
+            const loteId = button.dataset.loteId;
+            const reallocateList = document.getElementById('reallocateJaulaList');
+            reallocateList.innerHTML = '<p>Buscando otras jaulas disponibles...</p>';
+            detailModal.hide();
+            reallocateModal.show();
+            document.getElementById('reallocateJaulaForm').dataset.loteId = loteId;
+            fetch(`/produccion/api/jaulas_disponibles/${loteId}/`)
+                .then(response => response.json())
+                .then(jaulas => {
+                    if (jaulas.length > 0) {
+                        let selectHTML = '<label class="form-label">Jaula de Destino</label><select class="form-select" name="jaula_destino" required>';
+                        jaulas.forEach(jaula => { selectHTML += `<option value="${jaula.id}">${jaula.codigo} - Capacidad: ${jaula.capacidad_maxima_unidades}</option>`; });
+                        selectHTML += '</select>';
+                        reallocateList.innerHTML = selectHTML;
+                    } else {
+                        reallocateList.innerHTML = '<div class="alert alert-warning">No hay otras jaulas disponibles para reasignar.</div>';
+                    }
+                });
+        }
+        if (button.id === 'finishLoteBtn') {
+            if (confirm('¿Estás seguro de que quieres finalizar este lote? Esta acción liberará la jaula.')) {
+                const loteId = button.dataset.loteId;
+                fetch(`/produccion/api/lote/${loteId}/finalizar/`, { method: 'POST', headers: {'X-CSRFToken': csrfToken} })
+                .then(response => response.json())
+                .then(data => {
+                    if(data.success) {
+                        alert(data.message);
+                        window.location.reload();
+                    } else {
+                        alert('Error: ' + (data.error || 'No se pudo finalizar el lote.'));
+                    }
+                });
+            }
+        }
+    });
+
+    document.body.addEventListener('submit', function(event) {
+        if (event.target.id === 'tallaForm' || event.target.id === 'pesoForm') {
+            event.preventDefault();
+            const form = event.target;
+            const loteId = form.dataset.loteId;
+            const formData = new FormData(form);
+            const isPesoForm = form.id === 'pesoForm';
+            const url = isPesoForm ? `/produccion/api/lote/${loteId}/definir_peso/` : `/produccion/api/lote/${loteId}/definir_talla/`;
+            fetch(url, { method: 'POST', body: formData, headers: {'X-CSRFToken': csrfToken} })
+            .then(response => response.json())
+            .then(data => {
+                if(data.success) {
+                    const unidadId = detailModalEl.dataset.unidadId;
+                    refreshModalContent(unidadId);
+                } else {
+                    const errorDiv = form.querySelector('.text-danger');
+                    if (errorDiv) errorDiv.textContent = data.error || 'Error al guardar.';
+                }
+            });
+        }
+        if (event.target.id === 'mortalidadForm') {
+            event.preventDefault();
+            const form = event.target;
+            const loteId = form.getAttribute('data-lote-id');
+            const errorDiv = form.querySelector('#mortalidadErrors');
+            const formData = new FormData(form);
+            fetch(`/produccion/api/lote/${loteId}/registrar_mortalidad/`, { method: 'POST', body: formData, headers: {'X-CSRFToken': csrfToken} })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        refreshModalContent(detailModalEl.dataset.unidadId);
+                        form.reset();
+                        errorDiv.innerHTML = '<span class="text-success small">Bajas registradas.</span>';
+                    } else {
+                        errorDiv.innerHTML = `<span class="text-danger small">${data.error || 'Ocurrió un error.'}</span>`;
+                    }
+                })
+                .catch(error => { errorDiv.textContent = 'Error de conexión.'; });
+        }
+        
+        if (event.target.id === 'reallocateJaulaForm') {
+            event.preventDefault();
+            const form = event.target;
+            const loteId = form.dataset.loteId;
+            const formData = new FormData(form);
+            const errorDiv = document.getElementById('reallocateJaulaErrors');
+            errorDiv.textContent = '';
+            fetch(`/produccion/api/lote/${loteId}/reasignar_engorde/`, { method: 'POST', body: formData, headers: {'X-CSRFToken': csrfToken} })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(data.message);
+                    window.location.reload();
+                } else {
+                    errorDiv.textContent = data.error || 'Ocurrió un error.';
+                }
+            });
+        }
+    });
+});
+</script>
+{% endblock scripts %}

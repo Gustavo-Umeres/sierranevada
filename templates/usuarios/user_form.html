@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container my-4 my-md-5">
+
+    {% if form.errors %}
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <h4 class="alert-heading"><i class="bi bi-exclamation-triangle-fill me-2"></i>Error al guardar</h4>
+            <p>El formulario no se pudo guardar. Por favor, corrige los siguientes errores:</p>
+            <hr>
+            {% for field, errors in form.errors.items %}
+                <p class="mb-1"><strong>{{ field }}:</strong> {{ errors|striptags }}</p>
+            {% endfor %}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    {% endif %}
+
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-4 p-md-5">
+                    
+                    <h1 class="card-title h3 mb-4 border-bottom pb-3">
+                        {% if object %}
+                            <i class="bi bi-pencil-square me-2"></i>Editar Usuario
+                        {% else %}
+                            <i class="bi bi-person-plus-fill me-2"></i>Crear Nuevo Usuario
+                        {% endif %}
+                    </h1>
+                    
+                    <form method="post" novalidate>
+                        {% csrf_token %}
+                        
+                        <fieldset class="mb-4">
+                            <legend class="h6 text-muted mb-3">Datos Personales</legend>
+                            <div class="form-floating mb-3">
+                                {{ form.username }}
+                                <label for="id_username">Nombre de Usuario</label>
+                            </div>
+                            <div class="row g-2">
+                                <div class="col-md-6">
+                                    <div class="form-floating mb-3">
+                                        {{ form.first_name }}
+                                        <label for="id_first_name">Nombres</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-floating mb-3">
+                                        {{ form.last_name }}
+                                        <label for="id_last_name">Apellidos</label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-floating mb-3">
+                                {{ form.email }}
+                                <label for="id_email">Correo Electrónico</label>
+                            </div>
+                            <div class="form-floating mb-3">
+                                {{ form.dni }}
+                                <label for="id_dni">DNI</label>
+                            </div>
+                        </fieldset>
+                        
+                        {% if not object %}
+                        <fieldset class="mb-4">
+                            <legend class="h6 text-muted mb-3">Contraseña</legend>
+                            <div class="form-floating mb-3">
+                                {{ form.password }}
+                                <label for="id_password">Contraseña</label>
+                                <div class="invalid-feedback">{{ form.password.errors|striptags }}</div>
+                            </div>
+                            <div class="form-floating mb-3">
+                                {{ form.password2 }}
+                                <label for="id_password2">Confirmar Contraseña</label>
+                                <div class="invalid-feedback">{{ form.password2.errors|striptags }}</div>
+                            </div>
+                        </fieldset>
+                        {% endif %}
+                        
+                        <fieldset class="mb-4">
+                            <legend class="h6 text-muted mb-3">Seguridad</legend>
+                            <div class="form-floating mb-3">
+                                {{ form.pregunta_seguridad }}
+                                <label for="id_pregunta_seguridad">Pregunta de Seguridad</label>
+                            </div>
+                            <div class="form-floating mb-3">
+                                {{ form.respuesta_seguridad }}
+                                <label for="id_respuesta_seguridad">Respuesta</label>
+                            </div>
+                        </fieldset>
+
+                        <fieldset>
+                            <legend class="h6 text-muted mb-3">Permisos y Roles</legend>
+                            
+                            <div class="mb-3 border rounded p-3 bg-light">
+                                <label class="form-label d-block mb-2">Módulos Permitidos</label>
+                                {% for group_choice in form.groups %}
+                                    <div class="form-check form-check-inline">
+                                        {{ group_choice.tag }}
+                                        <label for="{{ group_choice.id_for_label }}" class="form-check-label">{{ group_choice.choice_label }}</label>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label d-block">Permisos de Sistema</label>
+                                <div class="form-check form-switch">
+                                    {{ form.is_active }}
+                                    <label class="form-check-label" for="{{ form.is_active.id_for_label }}">Cuenta activa</label>
+                                </div>
+                            </div>
+                        </fieldset>
+
+                        <div class="mt-4 border-top pt-4 text-end">
+                            <a href="{% url 'user-list' %}" class="btn btn-secondary px-4 me-2">Cancelar</a>
+                            <button type="submit" class="btn btn-primary px-4">
+                                {% if object %}
+                                    <i class="bi bi-check-circle me-2"></i>Guardar Cambios
+                                {% else %}
+                                    <i class="bi bi-plus-circle me-2"></i>Crear Usuario
+                                {% endif %}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

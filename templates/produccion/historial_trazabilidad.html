@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h2">Reporte de Lotes Activos</h1>
+    <a href="{% url 'exportar-lotes-excel' %}?year={{ selected_year }}&month={{ selected_month }}" class="btn btn-success">
+        <i class="bi bi-file-earmark-excel me-2"></i>Exportar a Excel
+    </a>
+</div>
+
+<form method="get" class="row g-3 mb-4 p-3 bg-light border rounded">
+    <div class="col-md-3">
+        <label for="yearFilter" class="form-label">Filtrar por Año</label>
+        <select name="year" id="yearFilter" class="form-select">
+            <option value="">-- Todos los Años --</option>
+            {% for y in years %}<option value="{{ y }}" {% if selected_year == y|stringformat:"s" %}selected{% endif %}>{{ y }}</option>{% endfor %}
+        </select>
+    </div>
+    <div class="col-md-3">
+        <label for="monthFilter" class="form-label">Filtrar por Mes</label>
+        <select name="month" id="monthFilter" class="form-select">
+            <option value="">-- Todos los Meses --</option>
+            {% for m in months %}
+                <option value="{{ m.0 }}" {% if selected_month == m.0|stringformat:"s" %}selected{% endif %}>{{ m.1 }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="col-md-2 align-self-end">
+        <button type="submit" class="btn btn-primary w-100">Filtrar</button>
+    </div>
+</form>
+
+<div class="table-responsive">
+    <table class="table table-striped table-hover table-bordered small">
+        <thead class="table-dark">
+            <tr>
+                <th>LOTE</th>
+                <th>ETAPA</th>
+                <th>FECHA</th>
+                <th>BIOMASA (Kg)</th>
+                <th>PESO UNIT. (Gr)</th>
+                <th>TALLA (Cm)</th>
+                <th>N° PECES</th>
+                <th>% RAC.</th>
+                <th>CONS. ALIM. (Kg)</th>
+                <th>FCR</th>
+                <th>GAN. PESO (Gr)</th>
+                <th>% MORT.</th>
+                <th>PECES MUERTOS</th>
+                <th>TIPO DE DIETA</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in lotes_data %}
+            <tr>
+                <td><strong>{{ item.lote.codigo_lote }}</strong></td>
+                <td>{{ item.lote.get_etapa_actual_display }}</td>
+                <td>{{ item.lote.fecha_ingreso_etapa|date:"d/m/Y" }}</td>
+                <td>{{ item.lote.biomasa_kg|floatformat:2 }}</td>
+                <td>{{ item.lote.peso_promedio_pez_gr|floatformat:2 }}</td>
+                <td>{{ item.lote.talla_max_cm|floatformat:2 }}</td>
+                <td>{{ item.lote.cantidad_total_peces }}</td>
+                <td>{{ item.lote.racion_alimentaria_porcentaje|floatformat:1 }}%</td>
+                <td>{{ item.lote.alimento_diario_kg|floatformat:2 }}</td>
+                <td>{{ item.lote.conversion_alimenticia|floatformat:2 }}</td>
+                <td>{{ item.lote.ganancia_en_peso_gr|floatformat:2 }}</td>
+                
+                {# --- FORMA SIMPLIFICADA DE MOSTRAR DATOS --- #}
+                <td class="text-danger">{{ item.porc_mort|floatformat:2 }}%</td>
+                <td class="text-danger">{{ item.peces_muertos }}</td>
+
+                <td><span class="badge bg-info text-dark">{{ item.lote.tipo_alimento }}</span></td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="14" class="text-center p-4">No hay lotes que coincidan con los filtros seleccionados.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% endblock %}

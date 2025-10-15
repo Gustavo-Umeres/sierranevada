@@ -1,0 +1,496 @@
+{% extends "base.html" %}
+
+{% block content %}
+{% csrf_token %}
+
+<div class="d-flex justify-content-between align-items-center mb-4 border-bottom pb-3">
+    <h1 class="h2">{{ titulo_etapa }}</h1>
+    {% if tipo_unidad_slug == 'jaula' %}
+        <a href="{% url 'jaula-create' %}?tipo={{ jaula_tipo }}" class="btn btn-primary"><i class="bi bi-plus-circle me-2"></i>Añadir {{ tipo_unidad_singular }}</a>
+    {% else %}
+        <a href="{{ add_url }}" class="btn btn-primary"><i class="bi bi-plus-circle me-2"></i>Añadir {{ tipo_unidad_singular }}</a>
+    {% endif %}
+</div>
+
+<div class="list-group" data-es-etapa-final="{{ es_etapa_final|yesno:'true,false' }}">
+    {% for unidad in unidades %}
+        <div class="list-group-item d-flex justify-content-between align-items-center">
+            <button type="button" class="btn btn-link text-start text-decoration-none text-dark flex-grow-1 p-0 border-0"
+                    data-bs-toggle="modal" data-bs-target="#detailModal" 
+                    data-unidad-id="{{ unidad.pk }}" 
+                    data-tipo-unidad="{{ tipo_unidad_slug }}">
+                
+                <div class="d-flex w-100">
+                    <div class="flex-grow-1">
+                        <h5 class="mb-1">{{ unidad }}</h5>
+                        {% if tipo_unidad_slug == 'bastidor' %}
+                            {% if unidad.lote_actual %}
+                                <small class="text-muted">Ocupación: <strong>{{ unidad.lote_actual.cantidad_total_peces }} / {{ unidad.capacidad_maxima_unidades }}</strong> ovas</small>
+                            {% else %}
+                                <small class="text-muted">Capacidad: {{ unidad.capacidad_maxima_unidades }} ovas</small>
+                            {% endif %}
+                        {% else %}
+                            <small class="text-muted">Biomasa: <strong>{{ unidad.biomasa_actual|floatformat:2 }} / {{ unidad.capacidad_maxima_kg|floatformat:2 }} kg</strong></small>
+                        {% endif %}
+                    </div>
+                    <div class="text-end ps-3">
+                        {% if tipo_unidad_slug == 'bastidor' %}
+                            {% if unidad.lote_actual %}
+                                <h5 class="mb-1">{{ unidad.lote_actual.codigo_lote }}</h5>
+                            {% endif %}
+                        {% else %}
+                            {% if unidad.lotes.all %}
+                                <h5 class="mb-1">
+                                    {% for lote in unidad.lotes.all %}
+                                        {{ lote.codigo_lote }}{% if not forloop.last %}, {% endif %}
+                                    {% endfor %}
+                                </h5>
+                                <small class="text-muted">Lotes: {{ unidad.lotes.count }} | Alimento: {{ unidad.alimento_diario_total_kg|floatformat:2 }} kg/día</small>
+                            {% else %}
+                                <h5 class="mb-1 text-muted">Vacía</h5>
+                            {% endif %}
+                        {% endif %}
+                    </div>
+                </div>
+            </button>
+            
+            <div class="d-flex align-items-center ps-3">
+                {% if tipo_unidad_slug == 'bastidor' %}
+                    {% if unidad.esta_disponible %}
+                        <span class="badge bg-secondary rounded-pill">Disponible</span>
+                    {% else %}
+                        <span class="badge bg-success rounded-pill">Ocupado</span>
+                    {% endif %}
+                {% else %}
+                    {% if unidad.lotes.all %}
+                        <span class="badge bg-success rounded-pill">Ocupado</span>
+                    {% else %}
+                        <span class="badge bg-secondary rounded-pill">Disponible</span>
+                    {% endif %}
+                {% endif %}
+                <div class="btn-group ms-2" role="group">
+                    <a href="{% url update_url_name unidad.pk %}" class="btn btn-sm btn-outline-primary" title="Editar"><i class="bi bi-pencil-fill"></i></a>
+                    <button type="button" class="btn btn-sm btn-outline-danger" title="Eliminar"
+                            data-bs-toggle="modal" data-bs-target="#confirmDeleteModal"
+                            data-form-url="{% url delete_url_name unidad.pk %}">
+                        <i class="bi bi-trash-fill"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    {% empty %}
+    <p class="text-center text-muted mt-4">No hay {{ tipo_unidad_plural|lower }} registradas.</p>
+    {% endfor %}
+</div>
+
+<div class="modal fade" id="detailModal" tabindex="-1"><div class="modal-dialog modal-dialog-scrollable modal-dialog-centered"><div class="modal-content"><div class="modal-header"><h5 class="modal-title" id="detailModalTitle"></h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body" id="detailModalBody"></div></div></div></div>
+<div class="modal fade" id="addOvaModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-header"><h5 class="modal-title">Añadir Ovas a <span id="addOvaBastidorCodigo"></span></h5><button type="button" class="btn-close" data-bs-target="#detailModal" data-bs-toggle="modal"></button></div><div class="modal-body"><form id="addOvaForm" autocomplete="off"><input type="hidden" name="bastidor_id"><div class="mb-3"><label for="id_cantidad_total_peces_ova" class="form-label">Cantidad de Ovas</label><input type="number" name="cantidad_total_peces" class="form-control" id="id_cantidad_total_peces_ova" required min="1"><div class="form-text">Capacidad máxima: <span id="addOvaCapacidad"></span></div></div><div id="addOvaErrors" class="text-danger small mt-2"></div><div class="d-flex justify-content-end mt-3"><button type="button" class="btn btn-light me-2" data-bs-target="#detailModal" data-bs-toggle="modal">Cancelar</button><button type="submit" class="btn btn-primary">Guardar Lote</button></div></form></div></div></div></div>
+<div class="modal fade" id="actionModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-header"><h5 class="modal-title" id="actionModalTitle"></h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body" id="actionModalBody"></div><div class="modal-footer d-none" id="actionModalFooter"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button><button type="submit" form="actionForm" class="btn btn-primary" id="actionModalSubmitBtn"></button></div></div></div></div>
+<div class="modal fade" id="confirmDeleteModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-header"><h5 class="modal-title">Confirmar Eliminación</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><p>¿Estás seguro de que quieres eliminar este elemento? Esta acción no se puede deshacer.</p></div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button><form id="deleteForm" method="post"><button type="submit" class="btn btn-danger">Eliminar</button></form></div></div></div></div>
+{% endblock %}
+
+
+{% block scripts %}
+{{ block.super }}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    // --- INICIALIZACIÓN DE ELEMENTOS ---
+    const detailModalEl = document.getElementById('detailModal');
+    const confirmDeleteModalEl = document.getElementById('confirmDeleteModal');
+    if (!detailModalEl || !confirmDeleteModalEl) return;
+    
+    const detailModal = new bootstrap.Modal(detailModalEl);
+    const addOvaModal = new bootstrap.Modal(document.getElementById('addOvaModal'));
+    const actionModal = new bootstrap.Modal(document.getElementById('actionModal'));
+    const confirmDeleteModal = new bootstrap.Modal(confirmDeleteModalEl);
+    
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    const isEtapaFinal = document.querySelector('.list-group').dataset.esEtapaFinal === 'true';
+
+    // --- FUNCIÓN PARA CARGAR EL CONTENIDO DEL MODAL DE DETALLES ---
+    function refreshModalContent(unidadId, tipoUnidad) {
+        const modalBody = detailModalEl.querySelector('#detailModalBody');
+        const modalTitle = detailModalEl.querySelector('#detailModalTitle');
+        
+        modalTitle.textContent = `Detalle de ${tipoUnidad.charAt(0).toUpperCase() + tipoUnidad.slice(1)}`;
+        modalBody.innerHTML = '<div class="text-center p-3"><div class="spinner-border" role="status"><span class="visually-hidden">Cargando...</span></div></div>';
+        
+        fetch(`/produccion/api/unidad/${tipoUnidad}/${unidadId}/`, { cache: 'no-store' })
+            .then(response => {
+                if (!response.ok) throw new Error('Network response was not ok');
+                return response.json();
+            })
+            .then(data => {
+                let content = '';
+                const unidad = data.unidad;
+                const lotes = data.lotes;
+
+                if (tipoUnidad !== 'bastidor' && lotes.length > 0) {
+                    content += `
+                        <ul class="list-group list-group-flush mb-2">
+                            <li class="list-group-item d-flex justify-content-between align-items-center ps-0 py-2"><span><i class="bi bi-stack me-2 text-muted"></i>Biomasa</span><strong>${(unidad.biomasa_actual || 0).toFixed(2)} / ${(unidad.capacidad_maxima_kg || 0).toFixed(2)} kg</strong></li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center ps-0 py-2"><span class="text-success fw-bold"><i class="bi bi-battery-half me-2"></i>Biomasa Disponible</span><strong class="text-success fw-bold">${(unidad.biomasa_disponible || 0).toFixed(2)} kg</strong></li>
+                        </ul><hr class="my-3">`;
+                }
+
+                if (lotes && lotes.length > 0) {
+                    lotes.forEach(lote => {
+                        const limpiezaClass = lote.limpieza_hoy ? 'btn-success' : 'btn-secondary';
+                        const comidaClass = lote.alimentacion_hoy ? 'btn-success' : 'btn-secondary';
+
+                        content += `
+                            <div class="mb-3 p-3 border rounded shadow-sm bg-light">
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <h5 class="mb-0 text-primary">Lote: ${lote.codigo}</h5>
+                                    <span class="badge bg-info-subtle text-info-emphasis rounded-pill">Días: ${lote.dias_en_etapa}</span>
+                                </div>
+                                <ul class="list-group list-group-flush fs-sm">
+                                    <li class="list-group-item d-flex justify-content-between align-items-center ps-0 bg-light py-2"><span>Cantidad</span><strong>${lote.cantidad_peces}</strong></li>
+                                    <li class="list-group-item d-flex justify-content-between align-items-center ps-0 bg-light py-2"><span>Biomasa</span><strong>${lote.biomasa_lote_kg ? lote.biomasa_lote_kg.toFixed(2) : '0.00'} kg</strong></li>
+                                    <li class="list-group-item d-flex justify-content-between align-items-center ps-0 bg-light py-2">
+                                        <span>Alimento: <strong>${lote.alimento_diario_kg ? lote.alimento_diario_kg.toFixed(2) : '0.00'} kg</strong> <small class="text-muted">(${lote.racion_alimentaria_porcentaje ? lote.racion_alimentaria_porcentaje.toFixed(1) : '0.0'}%)</small></span>
+                                        <span class="badge bg-primary rounded-pill">${lote.tipo_alimento || 'No definido'}</span>
+                                    </li>
+                                </ul>
+                                <div id="medicionesSection-${lote.id}" class="mt-3 mb-3"></div>
+                                <form id="mortalidadForm-${lote.id}" class="mortalidadForm mb-4" data-lote-id="${lote.id}"><div class="input-group"><input type="number" name="cantidad" class="form-control" placeholder="Registrar N° de muertos" required min="1"><button type="submit" class="btn btn-danger">Registrar</button></div><div class="small text-danger mt-1"></div></form>
+                                <div class="text-center">
+                                    <h6 class="text-muted small text-uppercase">Acciones del Lote</h6>
+                                    <div class="d-flex justify-content-center gap-3 mt-3">
+                                        <div>
+                                            <button class="btn ${limpiezaClass} rounded-circle d-flex align-items-center justify-content-center action-btn" data-action="marcar-tarea" data-tarea="limpieza" data-lote-id="${lote.id}" title="Limpiar">
+                                                <i class="bi bi-snow fs-4"></i>
+                                                ${lote.limpieza_hoy ? '<i class="bi bi-check-circle-fill text-white check-mark"></i>' : ''}
+                                            </button>
+                                            <div class="small mt-1">Limpiar</div>
+                                        </div>
+                                        ${tipoUnidad !== 'bastidor' ? `
+                                        <div>
+                                            <button class="btn ${comidaClass} rounded-circle d-flex align-items-center justify-content-center action-btn" data-action="marcar-tarea" data-tarea="alimentacion" data-lote-id="${lote.id}" title="Alimentar">
+                                                <i class="bi bi-cup-straw fs-4"></i>
+                                                ${lote.alimentacion_hoy ? '<i class="bi bi-check-circle-fill text-white check-mark"></i>' : ''}
+                                            </button>
+                                            <div class="small mt-1">Alimentar</div>
+                                        </div>
+                                        ` : ''}
+                                        ${tipoUnidad === 'bastidor' ? `
+                                        <div>
+                                            <button class="btn btn-primary rounded-circle d-flex align-items-center justify-content-center action-btn" data-action="mover-ova" data-lote-id="${lote.id}" title="Mover a Artesa" ${lote.dias_en_etapa < 15 ? 'disabled' : ''}>
+                                                <i class="bi bi-arrows-move fs-4"></i>
+                                            </button>
+                                            <div class="small mt-1">Mover</div>
+                                        </div>
+                                        ` : ''}
+                                        ${tipoUnidad === 'artesa' ? `
+                                        <div>
+                                            <button class="btn btn-primary rounded-circle d-flex align-items-center justify-content-center action-btn" data-action="mover-alevin" data-lote-id="${lote.id}" title="Mover a Jaula de Juveniles" ${lote.talla_max_cm >= 8 ? '' : 'disabled'}>
+                                                <i class="bi bi-arrows-move fs-4"></i>
+                                            </button>
+                                            <div class="small mt-1">Mover</div>
+                                        </div>
+                                        <div>
+                                            <button class="btn btn-warning rounded-circle d-flex align-items-center justify-content-center action-btn" data-action="reasignar-alevin" data-lote-id="${lote.id}" title="Reasignar a otra Artesa">
+                                                <i class="bi bi-distribute-vertical fs-4"></i>
+                                            </button>
+                                            <div class="small mt-1">Reasignar</div>
+                                        </div>` : ''}
+                                        ${tipoUnidad === 'jaula' ? `
+                                        <div>
+                                            <button class="btn btn-primary rounded-circle d-flex align-items-center justify-content-center action-btn" data-action="mover-juvenil" data-lote-id="${lote.id}" title="Mover a Jaula de Engorde" ${(isEtapaFinal === false && lote.talla_max_cm >= 15) ? '' : 'disabled'}>
+                                                <i class="bi bi-arrows-move fs-4"></i>
+                                            </button>
+                                            <div class="small mt-1">Mover</div>
+                                        </div>
+                                        <div>
+                                            <button class="btn btn-warning rounded-circle d-flex align-items-center justify-content-center action-btn" data-action="reasignar-engorde" data-lote-id="${lote.id}" title="Reasignar a otra Jaula">
+                                                <i class="bi bi-distribute-vertical fs-4"></i>
+                                            </button>
+                                            <div class="small mt-1">Reasignar</div>
+                                        </div>
+                                        ${(isEtapaFinal && lote.talla_max_cm >= 25) ? `
+                                        <div>
+                                            <button class="btn btn-success rounded-circle d-flex align-items-center justify-content-center action-btn" data-action="finalizar-lote" data-lote-id="${lote.id}" title="Finalizar Lote">
+                                                <i class="bi bi-check-circle-fill fs-4"></i>
+                                            </button>
+                                            <div class="small mt-1">Finalizar</div>
+                                        </div>` : ''}` : ''}
+                                    </div>
+                                </div>
+                            </div>`;
+                });
+            } else {
+                content = `<div class="text-center p-4">
+                                <p class="lead">Esta unidad está actualmente vacía.</p>
+                                <p class="text-muted mb-4">Capacidad Máxima: <strong>${unidad.capacidad_maxima_kg ? unidad.capacidad_maxima_kg.toFixed(2) + ' kg' : (unidad.capacidad_maxima_unidades || '') + ' ovas'}</strong></p>
+                                ${tipoUnidad === 'bastidor' ? `<button class="btn btn-success btn-lg" data-action="abrir-add-ova" data-unidad-id="${unidad.id}" data-unidad-codigo="${unidad.codigo}" data-unidad-capacidad="${unidad.capacidad_maxima_unidades} ovas"><i class="bi bi-plus-circle me-2"></i>Añadir Ovas</button>` : ''}
+                           </div>`;
+            }
+            modalBody.innerHTML = content;
+            
+            if (lotes && lotes.length > 0 && tipoUnidad !== 'bastidor') {
+                lotes.forEach(lote => {
+                    const medicionesSection = modalBody.querySelector(`#medicionesSection-${lote.id}`);
+                    if (!medicionesSection) return;
+                    let tallaFormHTML = `<form id="tallaForm-${lote.id}" class="tallaForm d-none" data-lote-id="${lote.id}"><div class="row g-2 align-items-center"><div class="col"><div class="input-group"><input type="number" step="0.01" name="talla_min_cm" class="form-control" placeholder="Desde" value="${lote.talla_min_cm || ''}" required><input type="number" step="0.01" name="talla_max_cm" class="form-control" placeholder="Hasta" value="${lote.talla_max_cm || ''}" required></div></div><div class="col-auto"><button type="submit" class="btn btn-primary">Guardar</button></div></div><div class="small text-danger mt-1"></div></form>`;
+                    if (lote.talla_min_cm) {
+                        medicionesSection.innerHTML += `<div id="tallaWrapper-${lote.id}" class="d-flex justify-content-between align-items-center py-2 border-top"><span><i class="bi bi-rulers me-2 text-muted"></i>Rango de talla</span><div><strong>${lote.talla_min_cm} - ${lote.talla_max_cm} cm</strong><button class="btn btn-sm btn-light p-0 ms-2 edit-measurement" data-action="mostrar-form" data-form="talla" data-lote-id="${lote.id}"><i class="bi bi-pencil"></i></button></div></div>${tallaFormHTML}`;
+                    } else {
+                        medicionesSection.innerHTML += `<div id="tallaWrapper-${lote.id}" class="py-2 border-top"><button class="btn btn-outline-info w-100" data-action="mostrar-form" data-form="talla" data-lote-id="${lote.id}"><i class="bi bi-rulers me-2"></i>Registrar Talla</button></div>${tallaFormHTML}`;
+                    }
+                    let pesoFormHTML = `<form id="pesoForm-${lote.id}" class="pesoForm d-none mt-2" data-lote-id="${lote.id}"><div class="row g-2 align-items-center"><div class="col"><input type="number" step="0.01" name="peso_promedio_pez_gr" class="form-control" placeholder="Peso (g)" value="${lote.peso_promedio_pez_gr || ''}" required></div><div class="col-auto"><button type="submit" class="btn btn-primary">Guardar</button></div></div><div class="small text-danger mt-1"></div></form>`;
+                    if (lote.peso_promedio_pez_gr) {
+                        medicionesSection.innerHTML += `<div id="pesoWrapper-${lote.id}" class="d-flex justify-content-between align-items-center py-2 border-top"><span><i class="bi bi-scale me-2 text-muted"></i>Peso promedio</span><div><strong>${lote.peso_promedio_pez_gr} g</strong><button class="btn btn-sm btn-light p-0 ms-2 edit-measurement" data-action="mostrar-form" data-form="peso" data-lote-id="${lote.id}"><i class="bi bi-pencil"></i></button></div></div>${pesoFormHTML}`;
+                    } else {
+                        medicionesSection.innerHTML += `<div id="pesoWrapper-${lote.id}" class="mt-2 py-2 border-top"><button class="btn btn-outline-info w-100" data-action="mostrar-form" data-form="peso" data-lote-id="${lote.id}"><i class="bi bi-activity me-2"></i>Registrar Peso</button></div>${pesoFormHTML}`;
+                    }
+                });
+            }
+        })
+        .catch(error => {
+            modalBody.innerHTML = `<div class="alert alert-danger">Error al cargar los detalles: ${error.message}</div>`;
+            console.error("Error en fetch:", error);
+        });
+    }
+
+    detailModalEl.addEventListener('show.bs.modal', event => {
+        const button = event.relatedTarget;
+        if (button?.dataset.unidadId && button?.dataset.tipoUnidad) {
+            detailModalEl.dataset.unidadId = button.dataset.unidadId;
+            detailModalEl.dataset.tipoUnidad = button.dataset.tipoUnidad;
+            refreshModalContent(button.dataset.unidadId, button.dataset.tipoUnidad);
+        }
+    });
+
+    confirmDeleteModalEl.addEventListener('show.bs.modal', event => {
+        const button = event.relatedTarget;
+        const form = confirmDeleteModalEl.querySelector('#deleteForm');
+        form.action = button.dataset.formUrl;
+        let csrfInput = form.querySelector('input[name="csrfmiddlewaretoken"]');
+        if (!csrfInput) {
+            csrfInput = document.createElement('input');
+            csrfInput.type = 'hidden';
+            csrfInput.name = 'csrfmiddlewaretoken';
+            csrfInput.value = csrfToken;
+            form.appendChild(csrfInput);
+        }
+    });
+
+    document.body.addEventListener('click', event => {
+        const target = event.target.closest('[data-action]');
+        if (!target) return;
+
+        const action = target.dataset.action;
+        const loteId = target.dataset.loteId;
+        
+        if (action === 'abrir-add-ova') {
+            document.querySelector('#addOvaBastidorCodigo').textContent = target.dataset.unidadCodigo;
+            document.querySelector('#addOvaCapacidad').textContent = target.dataset.unidadCapacidad;
+            document.querySelector('#addOvaForm input[name="bastidor_id"]').value = target.dataset.unidadId;
+            document.querySelector('#addOvaForm').reset();
+            document.querySelector('#addOvaErrors').textContent = '';
+            detailModal.hide();
+            addOvaModal.show();
+        }
+        else if (action === 'marcar-tarea') {
+            fetch(`/produccion/api/lote/${loteId}/marcar_tarea/${target.dataset.tarea}/`, { method: 'POST', headers: {'X-CSRFToken': csrfToken} })
+                .then(res => res.json()).then(data => { 
+                    if (data.success) { 
+                        target.classList.remove('btn-secondary', 'btn-outline-secondary');
+                        target.classList.add('btn-success');
+                        if (!target.querySelector('.check-mark')) {
+                            target.innerHTML += `<i class="bi bi-check-circle-fill text-white check-mark"></i>`;
+                        }
+                    }
+                });
+        }
+        else if (action === 'mostrar-form') {
+            const formType = target.dataset.form;
+            const loteId = target.dataset.loteId;
+            document.querySelector(`#${formType}Wrapper-${loteId}`).classList.add('d-none');
+            document.querySelector(`#${formType}Form-${loteId}`).classList.remove('d-none');
+        }
+        else if (action.startsWith('mover-') || action.startsWith('reasignar-')) {
+            openActionModal(action, loteId);
+        }
+    });
+
+    document.body.addEventListener('submit', event => {
+        const form = event.target;
+        event.preventDefault();
+        
+        if (form.id === 'addOvaForm') {
+            const formData = new FormData(form);
+            const bastidorId = formData.get('bastidor_id');
+            fetch(`/produccion/api/lote/ova/crear/${bastidorId}/`, { method: 'POST', body: formData, headers: {'X-CSRFToken': csrfToken}})
+                .then(res => res.json()).then(data => { if(data.success) { alert(data.message); window.location.reload(); } else { document.querySelector('#addOvaErrors').textContent = data.error; }});
+        }
+        else if (form.classList.contains('mortalidadForm')) {
+            const formData = new FormData(form);
+            fetch(`/produccion/api/lote/${form.dataset.loteId}/registrar_mortalidad/`, { method: 'POST', body: formData, headers: {'X-CSRFToken': csrfToken}})
+                .then(res => res.json()).then(data => {
+                    if (data.success) {
+                        window.location.reload(); // <--- LÍNEA CORREGIDA
+                    } else { form.querySelector('.small.text-danger').textContent = data.error || 'Error desconocido'; }
+                });
+        }
+        else if (form.classList.contains('tallaForm') || form.classList.contains('pesoForm')) {
+            const formData = new FormData(form);
+            const url = form.classList.contains('tallaForm') ? `/produccion/api/lote/${form.dataset.loteId}/definir_talla/` : `/produccion/api/lote/${form.dataset.loteId}/definir_peso/`;
+            fetch(url, { method: 'POST', body: formData, headers: {'X-CSRFToken': csrfToken}})
+                .then(res => res.json()).then(data => {
+                    if (data.success) {
+                        refreshModalContent(detailModalEl.dataset.unidadId, detailModalEl.dataset.tipoUnidad);
+                    } else { form.querySelector('.text-danger').textContent = data.error; }
+                });
+        }
+        else if (form.id === 'actionForm') {
+            const formData = new FormData(form);
+            const submitUrl = form.dataset.submitUrl;
+            if (submitUrl) {
+                fetch(submitUrl, { method: 'POST', body: formData, headers: {'X-CSRFToken': csrfToken}})
+                    .then(res => res.json()).then(data => { if(data.success) { alert(data.message); window.location.reload(); } else document.querySelector('#actionErrors').textContent = data.error; });
+            }
+        }
+    });
+
+    function openActionModal(action, loteId) {
+        detailModal.hide();
+        const modalTitle = actionModal._element.querySelector('#actionModalTitle');
+        const modalBody = actionModal._element.querySelector('#actionModalBody');
+        const modalFooter = actionModal._element.querySelector('#actionModalFooter');
+        const submitBtn = actionModal._element.querySelector('#actionModalSubmitBtn');
+
+        modalBody.innerHTML = '<div class="text-center p-3"><div class="spinner-border"></div></div>';
+        modalFooter.classList.add('d-none');
+        actionModal.show();
+
+        let config = {};
+        switch (action) {
+            case 'mover-ova':
+                config = { title: 'Mover Lote a Artesa', fetchUrl: `/produccion/api/artesas_disponibles/${loteId}/`, submitUrl: null, showQuantity: false, destName: 'artesa_destino' };
+                break;
+            case 'mover-alevin':
+                config = { title: 'Mover Alevines a Jaula Juvenil', fetchUrl: `/produccion/api/jaulas_disponibles/${loteId}/`, submitUrl: `/produccion/api/lote/${loteId}/mover_a_jaula/`, showQuantity: true, destName: 'jaula_destino' };
+                break;
+            case 'mover-juvenil':
+                config = { title: 'Mover Juveniles a Jaula de Engorde', fetchUrl: `/produccion/api/jaulas_disponibles_engorde/${loteId}/`, submitUrl: `/produccion/api/lote/${loteId}/mover_a_jaula_engorde/`, showQuantity: true, destName: 'jaula_destino' };
+                break;
+            case 'reasignar-alevin':
+                config = { title: 'Reasignar a otra Artesa', fetchUrl: `/produccion/api/artesas_disponibles/${loteId}/`, submitUrl: `/produccion/api/lote/${loteId}/reasignar_alevines/`, showQuantity: true, destName: 'artesa_destino' };
+                break;
+            case 'reasignar-engorde':
+                 config = { title: 'Reasignar a otra Jaula', fetchUrl: `/produccion/api/otras_jaulas_disponibles/${loteId}/`, submitUrl: `/produccion/api/lote/${loteId}/reasignar_engorde/`, showQuantity: true, destName: 'jaula_destino' };
+                break;
+        }
+
+        modalTitle.textContent = config.title;
+        submitBtn.textContent = config.showQuantity ? 'Confirmar' : 'Mover';
+
+        fetch(config.fetchUrl)
+            .then(res => res.json())
+            .then(data => {
+                const unidades = data.artesas || data.jaulas || data;
+                const biomasaAMover = data.biomasa_a_mover;
+
+                if (!unidades || unidades.length === 0) {
+                    modalBody.innerHTML = '<div class="alert alert-warning">No hay unidades de destino con capacidad suficiente.</div>';
+                    return;
+                }
+
+                let formContent = '';
+                if (typeof biomasaAMover === 'number') {
+                    formContent += `<div class="alert alert-info text-center py-2">Biomasa del lote a mover: <strong>${biomasaAMover.toFixed(2)} kg</strong></div>`;
+                }
+                formContent += `<form id="actionForm" data-submit-url="${config.submitUrl || ''}">
+                    <p class="mb-2">1. Selecciona una unidad de destino:</p>
+                    <div class="list-group overflow-auto mb-3" style="max-height: 300px; border: 1px solid #dee2e6; border-radius: .375rem;">`;
+                
+                unidades.forEach(u => {
+                    let capacidadInfo = '';
+                    // PARCHE DE SEGURIDAD: Convertir a número antes de usar toFixed
+                    const biomasaActual = parseFloat(u.biomasa_actual_kg || 0);
+                    const capacidadMaxima = parseFloat(u.capacidad_maxima_kg || 0);
+                    const biomasaDisponible = parseFloat(u.biomasa_disponible_kg || 0);
+
+                    if (u.hasOwnProperty('biomasa_disponible_kg')) {
+                        capacidadInfo = `(${(biomasaActual).toFixed(1)} / ${(capacidadMaxima).toFixed(1)} kg)`;
+                    } else {
+                        capacidadInfo = `${u.capacidad_maxima_unidades} ovas`;
+                    }
+                    formContent += `
+                        <label class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-2">
+                            <div class="d-flex align-items-center">
+                                <input class="form-check-input me-3" type="radio" name="${config.destName}" value="${u.id}" required>
+                                <div class="d-flex flex-column">
+                                    <strong class="mb-0">${u.codigo}</strong>
+                                    <small class="text-muted">${capacidadInfo}</small>
+                                </div>
+                            </div>
+                            ${u.hasOwnProperty('biomasa_disponible_kg') ? `<span class="badge bg-success-subtle text-success-emphasis rounded-pill">Disp: ${biomasaDisponible.toFixed(1)} kg</span>` : ''}
+                        </label>`;
+                });
+
+                formContent += `</div>`;
+                if (config.showQuantity) {
+                    formContent += `<div class="mb-3"><label class="form-label">2. Cantidad a mover</label><input type="number" name="cantidad" class="form-control" placeholder="Dejar en blanco para mover todo el lote" min="1"></div>`;
+                }
+                formContent += `<div class="text-danger small" id="actionErrors"></div></form>`;
+                modalBody.innerHTML = formContent;
+
+                if (config.submitUrl) {
+                    modalFooter.classList.remove('d-none');
+                }
+            });
+    }
+    
+    document.getElementById('actionModalBody').addEventListener('click', event => {
+        const target = event.target.closest('label.list-group-item-action');
+        if (target) {
+            const form = target.closest('form');
+            if (form && !form.dataset.submitUrl) {
+                const loteId = document.querySelector('[data-action="mover-ova"]')?.dataset.loteId;
+                const artesaId = target.querySelector('input').value;
+                if (loteId && artesaId && confirm('¿Confirmas mover este lote a la artesa seleccionada?')) {
+                     fetch(`/produccion/api/lote/${loteId}/mover_a_artesa/${artesaId}/`, { method: 'POST', headers: {'X-CSRFToken': csrfToken}})
+                        .then(res => res.json()).then(data => { if(data.success) { alert(data.message); window.location.reload(); } else alert(data.error); });
+                }
+            }
+        }
+    });
+});
+</script>
+{% endblock scripts %}
+
+
+{% block extra_css %}
+{{ block.super }}
+<style>
+.action-btn {
+    width: 60px;
+    height: 60px;
+    position: relative;
+}
+.check-mark {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    font-size: 1.2rem;
+    background-color: #198754;
+    border-radius: 50%;
+    line-height: 1;
+}
+.edit-measurement {
+    width: 30px;
+    height: 30px;
+    line-height: 1;
+    border: none;
+    background-color: transparent;
+}
+.edit-measurement:hover {
+    background-color: #e9ecef;
+}
+.fs-sm {
+    font-size: 0.9rem;
+}
+</style>
+{% endblock extra_css %}

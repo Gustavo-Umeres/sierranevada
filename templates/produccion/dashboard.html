@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<h1 class="h2 mb-4">Módulo de Producción</h1>
+
+{# Fila para las etapas de producción #}
+<div class="row row-cols-1 row-cols-md-2 row-cols-lg-4 g-4 text-center mb-4">
+    <div class="col">
+        <div class="card h-100 shadow-sm">
+            <img src="{% static 'produccion/ovas.jpg' %}" class="card-img-top" alt="Ovas" style="height: 180px; object-fit: cover;">
+            <div class="card-body d-flex flex-column">
+                <h5 class="card-title">Ovas</h5>
+                <p class="card-text">Gestión de bastidores y lotes de ovas.</p>
+                <a href="{% url 'bastidor-list' %}" class="btn btn-primary w-100 mt-auto">Ir a Ovas</a>
+            </div>
+        </div>
+    </div>
+    <div class="col">
+        <div class="card h-100 shadow-sm">
+            <img src="{% static 'produccion/alevines.jpg' %}" class="card-img-top" alt="Alevines" style="height: 180px; object-fit: cover;">
+            <div class="card-body d-flex flex-column">
+                <h5 class="card-title">Alevines</h5>
+                <p class="card-text">Gestión de artesas y lotes de alevines.</p>
+                <a href="{% url 'artesa-list' %}" class="btn btn-primary w-100 mt-auto">Ir a Alevines</a>
+            </div>
+        </div>
+    </div>
+    <div class="col">
+        <div class="card h-100 shadow-sm">
+            <img src="{% static 'produccion/juveniles.jpg' %}" class="card-img-top" alt="Juveniles" style="height: 180px; object-fit: cover;">
+            <div class="card-body d-flex flex-column">
+                <h5 class="card-title">Juveniles</h5>
+                <p class="card-text">Gestión de jaulas y lotes de juveniles.</p>
+                <a href="{% url 'juvenil-list' %}" class="btn btn-primary w-100 mt-auto">Ir a Juveniles</a>
+            </div>
+        </div>
+    </div>
+    <div class="col">
+        <div class="card h-100 shadow-sm">
+            <img src="{% static 'produccion/trucha.jpg' %}" class="card-img-top" alt="Engorde" style="height: 180px; object-fit: cover;">
+            <div class="card-body d-flex flex-column">
+                <h5 class="card-title">Engorde</h5>
+                <p class="card-text">Gestión de jaulas y lotes de engorde.</p>
+                <a href="{% url 'engorde-list' %}" class="btn btn-primary w-100 mt-auto">Ir a Engorde</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<hr class="my-4">
+
+{# Fila para las nuevas funcionalidades #}
+<h2 class="h3 mb-4">Herramientas Adicionales</h2>
+<div class="row row-cols-1 row-cols-md-2 g-4 text-center">
+    <div class="col">
+        {# --- TARJETA CORREGIDA: Se eliminó h-100 --- #}
+        <div class="card shadow-sm">
+            <div class="card-body d-flex flex-column justify-content-center p-4">
+                <i class="bi bi-graph-up-arrow fs-1 text-primary"></i>
+                <h5 class="card-title mt-3">Dashboard Analítico</h5>
+                <p class="card-text">Visualiza gráficos y métricas de producción.</p>
+                <div class="mt-3">
+                    <a href="{% url 'dashboard-analitico' %}" class="btn btn-outline-primary w-100">Ver Gráficos</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col">
+        {# --- TARJETA CORREGIDA: Se eliminó h-100 --- #}
+        <div class="card shadow-sm">
+            <div class="card-body d-flex flex-column justify-content-center p-4">
+                <i class="bi bi-clipboard-data fs-1 text-success"></i>
+                <h5 class="card-title mt-3">Reporte de Lotes</h5>
+                <p class="card-text">Consulta y exporta el estado de todos los lotes.</p>
+                <div class="mt-3">
+                     <a href="{% url 'historial-trazabilidad' %}" class="btn btn-outline-success w-100">Ver Reporte</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

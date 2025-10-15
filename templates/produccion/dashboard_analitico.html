@@ -1,0 +1,166 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<h1 class="h2 mb-4">Dashboard Analítico de Producción</h1>
+
+<div class="row g-3 mb-4 p-3 bg-light border rounded">
+    <div class="col-md-3">
+        <label for="yearFilter" class="form-label">Año</label>
+        <select id="yearFilter" class="form-select"></select>
+    </div>
+    <div class="col-md-3">
+        <label for="monthFilter" class="form-label">Mes</label>
+        <select id="monthFilter" class="form-select"></select>
+    </div>
+</div>
+
+<div class="row row-cols-1 row-cols-xl-2 g-4">
+    
+    <div class="col">
+        <div class="card shadow-sm h-100">
+            <div class="card-body">
+                <h5 class="card-title">Progreso de Biomasa de Lotes</h5>
+                <p class="card-subtitle mb-2 text-muted small">Días en etapa vs. Peso promedio (el tamaño de la burbuja es la biomasa)</p>
+                <div style="height: 400px;"><canvas id="biomasaChart"></canvas></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col">
+        <div class="card shadow-sm h-100">
+            <div class="card-body">
+                <h5 class="card-title">Consumo de Alimento por Tipo (Hoy vs Ayer)</h5>
+                <p class="card-subtitle mb-2 text-muted small">Comparación del consumo diario en Kg.</p>
+                <div style="height: 400px;"><canvas id="consumoChart"></canvas></div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col">
+        <div class="card shadow-sm h-100">
+            <div class="card-body">
+                <h5 class="card-title">Distribución de Peces por Etapa</h5>
+                 <p class="card-subtitle mb-2 text-muted small">Cantidad total de peces en cada etapa de producción.</p>
+                <div style="height: 400px;"><canvas id="camadaChart"></canvas></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col">
+        <div class="card shadow-sm h-100">
+            <div class="card-body">
+                <h5 class="card-title">Top 10 Lotes con Mayor Mortalidad (Total)</h5>
+                 <p class="card-subtitle mb-2 text-muted small">Mortalidad acumulada de los lotes activos.</p>
+                <div style="height: 400px;"><canvas id="mortalidadChart"></canvas></div>
+            </div>
+        </div>
+    </div>
+    
+</div>
+{% endblock %}
+
+
+{% block scripts %}
+{{ block.super }}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const yearFilter = document.getElementById('yearFilter');
+    const monthFilter = document.getElementById('monthFilter');
+    
+    let biomasaChart, consumoChart, camadaChart, mortalidadChart;
+
+    function populateFilters() {
+        const currentYear = new Date().getFullYear();
+        for (let y = currentYear; y >= 2023; y--) {
+            yearFilter.innerHTML += `<option value="${y}">${y}</option>`;
+        }
+        const monthNames = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+        for (let m = 0; m < 12; m++) {
+            monthFilter.innerHTML += `<option value="${m + 1}">${monthNames[m]}</option>`;
+        }
+        yearFilter.value = currentYear;
+        monthFilter.value = new Date().getMonth() + 1;
+    }
+
+    function updateCharts() {
+        const year = yearFilter.value;
+        const month = monthFilter.value;
+        const url = `/produccion/api/dashboard-data/?year=${year}&month=${month}`;
+
+        fetch(url)
+            .then(response => response.json())
+            .then(data => {
+                
+                // 1. Gráfico de Burbuja: Progreso de Biomasa
+                const biomasaCtx = document.getElementById('biomasaChart').getContext('2d');
+                if (biomasaChart) biomasaChart.destroy();
+                const etapas = [...new Set(data.biomasa_progreso.map(d => d.etapa))];
+                const colores = {'Alevines': 'rgba(54, 162, 235, 0.7)', 'Juveniles': 'rgba(255, 206, 86, 0.7)', 'Engorde': 'rgba(75, 192, 192, 0.7)'};
+                biomasaChart = new Chart(biomasaCtx, {
+                    type: 'bubble',
+                    data: {
+                        datasets: etapas.map(etapa => ({
+                            label: etapa,
+                            data: data.biomasa_progreso.filter(d => d.etapa === etapa).map(d => ({
+                                x: d.dias, y: d.peso_gr, r: Math.sqrt(d.biomasa_kg) * 2,
+                                lote: d.lote, biomasa_kg: d.biomasa_kg
+                            })),
+                            backgroundColor: colores[etapa] || 'rgba(153, 102, 255, 0.7)',
+                        }))
+                    },
+                    options: { responsive: true, maintainAspectRatio: false, scales: { x: { title: { display: true, text: 'Días en Etapa' } }, y: { title: { display: true, text: 'Peso Promedio (g)' } } }, plugins: { tooltip: { callbacks: { label: ctx => `${ctx.raw.lote}: ${ctx.raw.biomasa_kg.toFixed(2)} kg` } } } }
+                });
+
+                // 2. Gráfico de Barras: Consumo de Alimento
+                const consumoCtx = document.getElementById('consumoChart').getContext('2d');
+                if (consumoChart) consumoChart.destroy();
+                consumoChart = new Chart(consumoCtx, {
+                    type: 'bar',
+                    data: { labels: data.consumo_alimento.labels, datasets: [
+                        { label: 'Ayer', data: data.consumo_alimento.ayer, backgroundColor: 'rgba(255, 159, 64, 0.7)' },
+                        { label: 'Hoy', data: data.consumo_alimento.hoy, backgroundColor: 'rgba(54, 162, 235, 0.7)' }
+                    ]},
+                    options: { responsive: true, maintainAspectRatio: false, scales: { x: { stacked: true }, y: { stacked: true, title: { display: true, text: 'Consumo (kg)' } } } }
+                });
+
+                // 3. Gráfico de Barras Horizontales: Evolución de Camada
+                const camadaCtx = document.getElementById('camadaChart').getContext('2d');
+                if (camadaChart) camadaChart.destroy();
+                camadaChart = new Chart(camadaCtx, {
+                    type: 'bar',
+                    data: { labels: data.evolucion_camada.labels, datasets: [{
+                        label: 'Número de Peces',
+                        data: data.evolucion_camada.data,
+                        backgroundColor: ['rgba(255, 99, 132, 0.7)', 'rgba(54, 162, 235, 0.7)', 'rgba(255, 206, 86, 0.7)', 'rgba(75, 192, 192, 0.7)']
+                    }]},
+                    options: { responsive: true, maintainAspectRatio: false, indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { title: { display: true, text: 'Cantidad Total de Peces' } } } }
+                });
+
+                // 4. Gráfico de Barras: Mortalidad por Lote
+                const mortalidadCtx = document.getElementById('mortalidadChart').getContext('2d');
+                if(mortalidadChart) mortalidadChart.destroy();
+                mortalidadChart = new Chart(mortalidadCtx, {
+                    type: 'bar',
+                    data: { labels: data.mortalidad_lotes.labels, datasets: [{
+                        label: 'Bajas Acumuladas',
+                        data: data.mortalidad_lotes.data,
+                        backgroundColor: 'rgba(255, 99, 132, 0.7)', // Color rojo
+                        borderColor: 'rgba(255, 99, 132, 1)'
+                    }]},
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { title: { display: true, text: 'N° de Bajas' } } } }
+                });
+
+            })
+            .catch(error => console.error('Error al cargar datos del dashboard:', error));
+    }
+
+    yearFilter.addEventListener('change', updateCharts);
+    monthFilter.addEventListener('change', updateCharts);
+
+    populateFilters();
+    updateCharts();
+});
+</script>
+{% endblock %}

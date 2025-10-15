@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow-sm">
+                <div class="card-header">
+                    <h3 class="mb-0">{% if object %}Editar{% else %}Crear{% endif %} {{ tipo_unidad }}</h3>
+                </div>
+                <div class="card-body">
+                    <form method="post" novalidate>
+                        {% csrf_token %}
+                        {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
+                        
+                        <div class="mb-3">
+                            {{ form.capacidad_maxima_unidades.label_tag }}
+                            {{ form.capacidad_maxima_unidades }}
+                            {% if form.capacidad_maxima_unidades.errors %}<div class="text-danger small">{{ form.capacidad_maxima_unidades.errors }}</div>{% endif %}
+                        </div>
+
+                        {% if not object and form.cantidad_a_crear %}
+                        <div class="mb-3">
+                            {{ form.cantidad_a_crear.label_tag }}
+                            {{ form.cantidad_a_crear }}
+                            <div class="form-text">{{ form.cantidad_a_crear.help_text }}</div>
+                            {% if form.cantidad_a_crear.errors %}<div class="text-danger small">{{ form.cantidad_a_crear.errors }}</div>{% endif %}
+                        </div>
+                        {% endif %}
+
+                        <div class="d-flex justify-content-end mt-4">
+                            <a href="{% url 'bastidor-list' %}" class="btn btn-secondary me-2">Cancelar</a>
+                            <button type="submit" class="btn btn-primary"><i class="bi bi-check-circle me-2"></i>Guardar</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ block.super }} {# Para no perder el script de notificaciones de base.html #}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Aplica la clase de Bootstrap a los campos del formulario para un mejor estilo
+    document.querySelectorAll('form input, form select').forEach(el => {
+        if (el.type !== 'checkbox') el.classList.add('form-control');
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow-sm">
+                <div class="card-header">
+                    <h3 class="mb-0">{% if object %}Editar{% else %}Crear{% endif %} {{ tipo_unidad }}</h3>
+                </div>
+                <div class="card-body">
+                    <form method="post" novalidate>
+                        {% csrf_token %}
+                        
+                        {# Muestra errores generales del formulario (si los hay) #}
+                        {% if form.non_field_errors %}
+                            <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+                        {% endif %}
+                        
+                        {# Campos ocultos #}
+                        {{ form.densidad_siembra_kg_m3 }}
+                        {% if form.tipo %}{{ form.tipo }}{% endif %}
+                        
+                        <div class="mb-3">
+                            {{ form.forma.label_tag }}
+                            {{ form.forma }}
+                            {% if form.forma.errors %}<div class="text-danger small mt-1">{{ form.forma.errors }}</div>{% endif %}
+                        </div>
+                        
+                        <div id="rectangular_fields" class="row g-3 border p-3 rounded mb-3" style="display: none;">
+                            <h6 class="text-muted">Dimensiones Rectangulares</h6>
+                            <div class="col-md-6">
+                                {{ form.largo_m.label_tag }}
+                                {{ form.largo_m }}
+                                {% if form.largo_m.errors %}<div class="text-danger small mt-1">{{ form.largo_m.errors }}</div>{% endif %}
+                            </div>
+                            <div class="col-md-6">
+                                {{ form.ancho_m.label_tag }}
+                                {{ form.ancho_m }}
+                                {% if form.ancho_m.errors %}<div class="text-danger small mt-1">{{ form.ancho_m.errors }}</div>{% endif %}
+                            </div>
+                        </div>
+
+                        <div id="diameter_fields" class="row g-3 border p-3 rounded mb-3" style="display: none;">
+                            <h6 class="text-muted" id="diameter_title">Dimensiones</h6>
+                            <div class="col-12">
+                                {{ form.diametro_m.label_tag }}
+                                {{ form.diametro_m }}
+                                <div class="form-text">{{ form.diametro_m.help_text }}</div>
+                                {% if form.diametro_m.errors %}<div class="text-danger small mt-1">{{ form.diametro_m.errors }}</div>{% endif %}
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.alto_m.label_tag }}
+                            {{ form.alto_m }}
+                            {% if form.alto_m.errors %}<div class="text-danger small mt-1">{{ form.alto_m.errors }}</div>{% endif %}
+                        </div>
+                        <hr>
+                        
+                        {% if not object and form.cantidad_a_crear %}
+                        <div class="mb-3">
+                            {{ form.cantidad_a_crear.label_tag }}
+                            {{ form.cantidad_a_crear }}
+                            <div class="form-text">{{ form.cantidad_a_crear.help_text }}</div>
+                            {% if form.cantidad_a_crear.errors %}<div class="text-danger small mt-1">{{ form.cantidad_a_crear.errors }}</div>{% endif %}
+                        </div>
+                        {% endif %}
+
+                        <div class="d-flex justify-content-end mt-4">
+                            <a href="{{ request.META.HTTP_REFERER|default_if_none:'javascript:history.back()' }}" class="btn btn-secondary me-2">Cancelar</a>
+                            <button type="submit" class="btn btn-primary"><i class="bi bi-check-circle me-2"></i>Guardar</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ block.super }}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('form input, form select').forEach(el => {
+        if (el.type !== 'checkbox') el.classList.add('form-control');
+    });
+
+    const formaSelector = document.getElementById('id_forma_selector');
+    const rectangularFields = document.getElementById('rectangular_fields');
+    const diameterFields = document.getElementById('diameter_fields');
+    const diameterTitle = document.getElementById('diameter_title');
+
+    function toggleDimensionFields() {
+        if (!formaSelector) return;
+        
+        const selectedShape = formaSelector.value;
+        
+        rectangularFields.style.display = 'none';
+        diameterFields.style.display = 'none';
+
+        if (selectedShape === 'RECTANGULAR') {
+            rectangularFields.style.display = 'flex';
+        } else {
+            diameterFields.style.display = 'flex';
+            if (selectedShape === 'CIRCULAR') {
+                diameterTitle.textContent = 'Dimensiones Circulares';
+            } else {
+                diameterTitle.textContent = 'Dimensiones Poligonales';
+            }
+        }
+    }
+
+    if(formaSelector) {
+        formaSelector.addEventListener('change', toggleDimensionFields);
+        toggleDimensionFields(); 
+    }
+});
+</script>
+{% endblock %}

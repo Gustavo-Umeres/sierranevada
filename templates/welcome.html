@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="text-center p-5 bg-light rounded-3">
+    <h1 class="display-4">¡Bienvenido, {{ user.first_name|default:user.username }}!</h1>
+    <p class="lead">Sistema de Control Interno de "Sierra Nevada".</p>
+    <hr class="my-4">
+    <p>Selecciona un módulo en la barra de navegación superior para comenzar.</p>
+</div>
+{% endblock %}
