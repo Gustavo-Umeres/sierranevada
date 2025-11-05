@@ -1,0 +1,348 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block content %}
+<style>
+    body {
+        background-color: #f8f9fb;
+    }
+
+    /* === Tarjeta de Formulario === */
+    .card {
+        border: none;
+        border-radius: 16px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        background-color: #ffffff;
+    }
+
+    .card-header {
+        background-color: transparent;
+        border-bottom: none;
+        padding: 1.5rem 2rem 0 2rem;
+    }
+    
+    .card-header h6 {
+        font-weight: 700;
+        color: #4e5d73;
+        font-size: 1.1rem;
+    }
+
+    .card-body {
+        padding: 2rem;
+    }
+    
+    h3.fw-semibold {
+        color: #333;
+        font-weight: 700;
+    }
+    
+    .title-icon {
+        color: #5C6BC0; /* Color unificado */
+        margin-right: 8px;
+    }
+
+    /* === Formularios Mejorados === */
+    .form-group label {
+        font-weight: 600;
+        color: #495057;
+        margin-bottom: 0.5rem;
+    }
+
+    .form-control {
+        padding: 0.75rem 1rem;
+        font-size: 0.95rem;
+        color: #495057;
+        background-color: #f8f9fb;
+        border: 1px solid #dee2e6;
+        border-radius: 12px;
+        transition: all 0.2s ease-in-out;
+    }
+    
+    .form-control:disabled, .form-control[readonly] {
+        background-color: #e9ecef;
+        opacity: 1;
+    }
+
+    .form-control:focus {
+        background-color: #ffffff;
+        border-color: #5C6BC0;
+        box-shadow: 0 0 0 0.2rem rgba(92, 107, 192, 0.25);
+    }
+    
+    .form-control::placeholder {
+        color: #adb5bd;
+        transition: color 0.15s ease-in-out;
+    }
+
+    .form-control:focus::placeholder {
+        color: transparent;
+    }
+    
+    /* Ocultar checkbox de eliminar del formset */
+    .form-check input[type="checkbox"][id$="-DELETE"] {
+        display: none;
+    }
+    .form-check label[for$="-DELETE"] {
+        display: none; /* Ocultamos también el label "Eliminar" */
+    }
+
+    /* === Botones (Estilo Unificado) === */
+    .btn-primary {
+        background-color: #5C6BC0;
+        border: none;
+        border-radius: 12px;
+        padding: 0.75rem 1.5rem;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 12px rgba(92, 107, 192, 0.25);
+    }
+    .btn-primary:hover {
+        background-color: #3F51B5;
+        transform: translateY(-2px);
+    }
+
+    .btn-secondary {
+        border-radius: 12px;
+        padding: 0.75rem 1.5rem;
+        background-color: #e9ecef;
+        color: #495057;
+        font-weight: 600;
+        border: none;
+        transition: all 0.3s ease;
+    }
+    .btn-secondary:hover {
+        background-color: #dde0e4;
+    }
+    
+    .btn-success {
+        background-color: #e6f4ea; /* Fondo verde pastel */
+        color: #188038; /* Texto verde oscuro */
+        border: none;
+        border-radius: 12px;
+        padding: 0.5rem 1rem;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+    .btn-success:hover {
+        background-color: #ccead7;
+    }
+    
+    .btn-danger.btn-sm,
+    .btn-danger-soft.btn-sm { /* Botón de eliminar */
+        background-color: #fdebee; /* Fondo rojo pastel */
+        color: #d93025; /* Texto rojo oscuro */
+        border: none;
+        border-radius: 10px;
+        padding: 0.5rem 0.8rem;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+    .btn-danger.btn-sm:hover,
+    .btn-danger-soft.btn-sm:hover {
+        background-color: #fbd7d4;
+    }
+    
+    /* === Estructura Formset === */
+    .detalle-form {
+        padding-top: 1rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid #e3e6f0;
+    }
+    .detalle-form:last-of-type {
+        border-bottom: none;
+    }
+    
+</style>
+
+<div class="container-fluid py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+
+            <div class="d-flex align-items-center justify-content-between mb-4">
+                <h3 class="fw-semibold text-secondary mb-0">
+                    <i class="fas fa-shopping-cart title-icon"></i> {{ titulo }}
+                </h3>
+            </div>
+
+            <form method="post">
+                {% csrf_token %}
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h6 class="text-muted mb-0">
+                            <i class="fas fa-info-circle me-2" style="color: #5C6BC0!important;"></i> Datos Principales
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6 form-group">
+                                <label>{{ form.proveedor.label }}</label>
+                                {{ form.proveedor }}
+                                {% if form.proveedor.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.proveedor.errors }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-3 form-group">
+                                <label>{{ form.fecha_esperada_entrega.label }}</label>
+                                {{ form.fecha_esperada_entrega }}
+                                {% if form.fecha_esperada_entrega.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.fecha_esperada_entrega.errors }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-3 form-group">
+                                <label>{{ form.estado.label }}</label>
+                                {% if object.estado == 'RECIBIDA' %}
+                                    <input type="text" value="RECIBIDA" class="form-control" readonly>
+                                {% else %}
+                                    {{ form.estado }}
+                                    {% if form.estado.errors %}
+                                        <div class="invalid-feedback d-block">{{ form.estado.errors }}</div>
+                                    {% endif %}
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h6 class="text-muted mb-0">
+                           <i class="fas fa-boxes me-2" style="color: #5C6BC0!important;"></i> Detalles de Insumos
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        {{ detalle_formset.management_form }}
+                        {% if detalle_formset.non_form_errors %}
+                        <div class="alert alert-danger">
+                            {{ detalle_formset.non_form_errors }}
+                        </div>
+                        {% endif %}
+
+                        <div id="detalle-formset-container">
+                            {% for form in detalle_formset %}
+                            <div class="row detalle-form align-items-end">
+                                {% if form.instance.pk %}{{ form.id }}{% endif %}
+                                <div class="col-md-5 form-group mb-0">
+                                    <label>{{ form.insumo.label }}</label>
+                                    {{ form.insumo }}
+                                    {% if form.insumo.errors %}<div class="invalid-feedback d-block">{{ form.insumo.errors }}</div>{% endif %}
+                                </div>
+                                <div class="col-md-3 form-group mb-0">
+                                    <label>{{ form.cantidad.label }}</label>
+                                    {{ form.cantidad }}
+                                    {% if form.cantidad.errors %}<div class="invalid-feedback d-block">{{ form.cantidad.errors }}</div>{% endif %}
+                                </div>
+                                <div class="col-md-3 form-group mb-0">
+                                    <label>{{ form.precio_unitario.label }}</label>
+                                    {{ form.precio_unitario }}
+                                    {% if form.precio_unitario.errors %}<div class="invalid-feedback d-block">{{ form.precio_unitario.errors }}</div>{% endif %}
+                                </div>
+                                <div class="col-md-1 d-flex align-items-center justify-content-center">
+                                    {% if form.can_delete and object.estado != 'RECIBIDA' %}
+                                    <div class="form-check">
+                                        {{ form.DELETE }}
+                                        <button type="button" class="btn btn-danger-soft btn-sm remove-form-row-existing">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+
+                        <div class="row detalle-form align-items-end detalle-form-empty" style="display:none;">
+                            <div class="col-md-5 form-group mb-0">
+                                <label>{{ detalle_formset.empty_form.insumo.label }}</label>
+                                {{ detalle_formset.empty_form.insumo }}
+                            </div>
+                            <div class="col-md-3 form-group mb-0">
+                                <label>{{ detalle_formset.empty_form.cantidad.label }}</label>
+                                {{ detalle_formset.empty_form.cantidad }}
+                            </div>
+                            <div class="col-md-3 form-group mb-0">
+                                <label>{{ detalle_formset.empty_form.precio_unitario.label }}</label>
+                                {{ detalle_formset.empty_form.precio_unitario }}
+                            </div>
+                            <div class="col-md-1 d-flex align-items-center justify-content-center">
+                                <button type="button" class="btn btn-danger-soft btn-sm remove-form-row">
+                                    <i class="fas fa-trash"></i> 
+                                </button>
+                            </div>
+                        </div>
+
+                        {% if object.estado != 'RECIBIDA' %}
+                        <button type="button" id="add-form-row" class="btn btn-success mt-3">
+                            <i class="fas fa-plus me-1"></i> Añadir Insumo
+                        </button>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="mt-3 d-flex gap-2">
+                    {% if object.estado != 'RECIBIDA' %}
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save me-1"></i> Guardar Orden
+                    </button>
+                    {% endif %}
+                    <a href="{% url 'ordencompra-list' %}" class="btn btn-secondary">
+                        Volver al Listado
+                    </a>
+                </div>
+            </form>
+
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block custom_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const container = document.getElementById('detalle-formset-container');
+    const addButton = document.getElementById('add-form-row');
+    const totalForms = document.getElementById('id_detalles-TOTAL_FORMS');
+    const formTemplate = document.querySelector('.detalle-form-empty').cloneNode(true);
+    formTemplate.classList.remove('detalle-form-empty');
+    formTemplate.removeAttribute('style');
+
+    // Asignamos el número de formulario inicial basado en las formas ya renderizadas
+    let formNum = container.querySelectorAll('.detalle-form').length;
+
+    addButton.addEventListener('click', function () {
+        let newForm = formTemplate.cloneNode(true);
+        // Reemplaza __prefix__ con el número de formulario actual
+        newForm.innerHTML = newForm.innerHTML.replace(/__prefix__/g, formNum);
+        container.appendChild(newForm);
+        
+        // Incrementa el contador TOTAL_FORMS
+        totalForms.value = parseInt(totalForms.value) + 1;
+        // Incrementa el índice para la próxima fila
+        formNum++;
+    });
+
+    container.addEventListener('click', function (e) {
+        let removeButton = e.target.closest('.remove-form-row, .remove-form-row-existing');
+        if (!removeButton) return;
+        
+        e.preventDefault();
+        let formRow = removeButton.closest('.row');
+        
+        if (removeButton.classList.contains('remove-form-row-existing')) {
+            // Es una fila existente: marca el checkbox DELETE y oculta la fila
+            let deleteInput = formRow.querySelector('input[id$="-DELETE"]');
+            if (deleteInput) {
+                deleteInput.checked = true;
+                formRow.style.display = 'none'; // Oculta visualmente
+            }
+        } else if (removeButton.classList.contains('remove-form-row')) {
+            // Es una fila nueva (no guardada): simplemente bórrala del DOM
+            formRow.remove();
+            // Decrementa el contador TOTAL_FORMS
+            totalForms.value = parseInt(totalForms.value) - 1;
+        }
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,203 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Inventario de Insumos{% endblock %}
+
+{% block content %}
+
+<style>
+    body {
+        background-color: #f8f9fb;
+    }
+
+    .card {
+        border: none;
+        border-radius: 16px; /* Coincide con tu dashboard */
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05); /* Sombra suave */
+    }
+
+    .card-header {
+        background-color: transparent;
+        border-bottom: none;
+        padding: 1.5rem 2rem 0 2rem;
+    }
+    
+    .card-header h6 {
+        font-weight: 700;
+        color: #4e5d73;
+        font-size: 1.1rem;
+    }
+
+    .card-body {
+        padding: 2rem;
+    }
+
+    /* --- Botón Principal Mejorado --- */
+    .btn-primary {
+        background-color: #5C6BC0; /* Un azul/índigo más suave y moderno */
+        border: none;
+        border-radius: 12px; /* Más redondeado */
+        padding: 0.75rem 1.5rem;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 12px rgba(92, 107, 192, 0.25);
+    }
+
+    .btn-primary:hover {
+        background-color: #3F51B5;
+        transform: translateY(-2px); /* Efecto de elevación */
+        box-shadow: 0 6px 16px rgba(92, 107, 192, 0.3);
+    }
+    
+    /* --- Botón Outline (Nuevo para Editar) --- */
+    .btn-outline-primary {
+        color: #5C6BC0;
+        border-color: #5C6BC0;
+        font-weight: 600;
+        border-radius: 12px; /* Radio consistente */
+        transition: all 0.3s ease;
+    }
+
+    .btn-outline-primary:hover {
+        background-color: #5C6BC0;
+        color: #fff;
+    }
+    
+    /* Ajuste para botón pequeño de editar */
+    .btn-outline-primary.btn-sm {
+        padding: 0.25rem 0.75rem;
+        border-radius: 10px; /* Un poco menos de radio para el botón sm */
+        font-size: 0.8rem;
+    }
+
+
+    /* --- Estilos de Tabla Limpios --- */
+    .table {
+        border: none; /* Sin borde exterior */
+    }
+
+    .table thead {
+        background-color: transparent;
+        color: inherit; 
+    }
+
+    .table th {
+        font-weight: 600;
+        padding: 1rem;
+        vertical-align: middle;
+        border-bottom: 1px solid #e3e6f0; 
+        border-top: none;
+        font-size: 0.9rem;
+        color: #6e707e; /* Texto de cabecera sutil */
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .table td {
+        color: #4e5d73;
+        padding: 1rem;
+        vertical-align: middle;
+        border-top: 1px solid #e3e6f0; 
+    }
+    
+    .table-hover tbody tr:hover {
+        background-color: #f7f9fc; /* Mantenemos un hover sutil */
+    }
+    
+    /* --- Badges de Estado (Estilo Moderno/Pastel) --- */
+    .badge {
+        padding: 0.5em 1em;
+        border-radius: 20px; /* Forma de píldora */
+        font-size: 0.8rem;
+        font-weight: 700;
+    }
+
+    .badge-success {
+        background-color: #e6f4ea; /* Fondo verde pastel */
+        color: #188038; /* Texto verde oscuro */
+    }
+    
+    .badge-warning {
+        background-color: #feefc3; /* Fondo amarillo pastel */
+        color: #E65100; /* Texto naranja/marrón */
+    }
+
+    /* Nuevo estilo para "Agotado" */
+    .badge-dark {
+        background-color: #e9ecef; /* Fondo gris pastel */
+        color: #212529; /* Texto oscuro */
+    }
+
+
+    h3.fw-semibold {
+        color: #333; /* Título principal un poco más oscuro */
+        font-weight: 700;
+    }
+</style>
+<div class="container-fluid py-4">
+
+    <div class="d-flex align-items-center justify-content-between mb-4">
+        <h3 class="fw-semibold text-dark mb-0">
+            <i class="fas fa-boxes me-2" style="color: #5C6BC0!important;"></i> Inventario de Insumos
+        </h3>
+        <a href="{% url 'insumo-create' %}" class="btn btn-primary">
+            <i class="fas fa-plus me-1"></i> Nuevo Insumo
+        </a>
+    </div>
+
+    <div class="card">
+        <div class="card-header d-flex align-items-center justify-content-between pb-0">
+            <h6 class="text-secondary mb-0 fw-semibold">
+                <i class="fas fa-clipboard-list me-2" style="color: #5C6BC0!important;"></i> Reporte de Stock Actual
+            </h6>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table align-middle table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>Nombre Insumo</th>
+                            <th>Categoría</th>
+                            <th>Stock Actual</th>
+                            <th>Unidad</th>
+                            <th>Stock Mínimo</th>
+                            <th>Estado</th>
+                            <th class="text-center">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for insumo in insumos %}
+                        <tr>
+                            <td class="fw-semibold">{{ insumo.nombre }}</td>
+                            <td>{{ insumo.categoria.nombre }}</td>
+                            <td><span class="fw-bold text-dark">{{ insumo.stock_actual }}</span></td>
+                            <td>{{ insumo.get_unidad_medida_display }}</td>
+                            <td>{{ insumo.stock_minimo }}</td>
+                            <td>
+                                {% if insumo.stock_actual == 0 %}
+                                <span class="badge badge-dark">AGOTADO</span>
+                                {% elif insumo.stock_actual < insumo.stock_minimo %}
+                                <span class="badge badge-warning">STOCK BAJO</span>
+                                {% else %}
+                                <span class="badge badge-success">EN STOCK</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                <a href="{% url 'insumo-update' insumo.pk %}" class="btn btn-outline-primary btn-sm">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="text-center text-muted py-4">No hay insumos registrados.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}  

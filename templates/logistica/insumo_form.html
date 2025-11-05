@@ -1,0 +1,207 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block content %}
+<style>
+    body {
+        background-color: #f8f9fb;
+    }
+
+    /* === Tarjeta de Formulario === */
+    .card {
+        border: none;
+        border-radius: 16px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        background-color: #ffffff;
+    }
+
+    .card-header {
+        background-color: transparent;
+        border-bottom: none;
+        padding: 1.5rem 2rem 0 2rem;
+    }
+    
+    .card-header h6 {
+        font-weight: 700;
+        color: #4e5d73;
+        font-size: 1.1rem;
+    }
+
+    .card-body {
+        padding: 2rem;
+    }
+    
+    h3.fw-semibold {
+        color: #333;
+        font-weight: 700;
+    }
+    
+    .title-icon {
+        color: #5C6BC0; /* Color unificado */
+        margin-right: 8px;
+    }
+
+    /* === Formularios Mejorados === */
+    .form-group label {
+        font-weight: 600;
+        color: #495057;
+        margin-bottom: 0.5rem;
+    }
+
+    .form-control {
+        padding: 0.75rem 1rem;
+        font-size: 0.95rem;
+        color: #495057;
+        background-color: #f8f9fb;
+        border: 1px solid #dee2e6;
+        border-radius: 12px;
+        transition: all 0.2s ease-in-out;
+    }
+    
+    .form-control:disabled, .form-control[readonly] {
+        background-color: #e9ecef;
+        opacity: 1;
+    }
+
+    .form-control:focus {
+        background-color: #ffffff;
+        border-color: #5C6BC0;
+        box-shadow: 0 0 0 0.2rem rgba(92, 107, 192, 0.25);
+    }
+    
+    /* --- ¡NUEVO! --- */
+    /* Estilo sutil para el placeholder */
+    .form-control::placeholder {
+        color: #adb5bd;
+        transition: color 0.15s ease-in-out;
+    }
+
+    /* Oculta el placeholder al hacer clic (focus) */
+    .form-control:focus::placeholder {
+        color: transparent;
+    }
+    
+
+    /* === Botones (Estilo Unificado) === */
+    .btn-primary {
+        background-color: #5C6BC0;
+        border: none;
+        border-radius: 12px;
+        padding: 0.75rem 1.5rem;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 12px rgba(92, 107, 192, 0.25);
+    }
+
+    .btn-primary:hover {
+        background-color: #3F51B5;
+        transform: translateY(-2px);
+    }
+
+    .btn-secondary {
+        border-radius: 12px;
+        padding: 0.75rem 1.5rem;
+        background-color: #e9ecef;
+        color: #495057;
+        font-weight: 600;
+        border: none;
+        transition: all 0.3s ease;
+    }
+
+    .btn-secondary:hover {
+        background-color: #dde0e4;
+    }
+    
+    hr {
+        border-top: 1px solid #e3e6f0;
+        margin: 1.5rem 0;
+    }
+    
+    .invalid-feedback {
+        font-size: 0.85rem;
+        font-weight: 500;
+    }
+
+</style>
+
+<div class="container-fluid py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            
+            <div class="d-flex align-items-center justify-content-between mb-4">
+                <h3 class="fw-semibold text-secondary mb-0">
+                    <i class="fas fa-box-open title-icon"></i> {{ titulo }}
+                </h3>
+            </div>
+        
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="text-muted mb-0">
+                        <i class="fas fa-info-circle me-2" style="color: #5C6BC0!important;"></i> Detalles del Insumo
+                    </h6>
+                </div>
+        
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label>{{ form.nombre.label }}</label>
+                                    {{ form.nombre }} 
+                                    {% if form.nombre.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.nombre.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label>{{ form.categoria.label }}</label>
+                                    {{ form.categoria }}
+                                    {% if form.categoria.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.categoria.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label>{{ form.unidad_medida.label }}</label>
+                                    {{ form.unidad_medida }}
+                                    {% if form.unidad_medida.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.unidad_medida.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label>{{ form.stock_minimo.label }}</label>
+                                    {{ form.stock_minimo }}
+                                    {% if form.stock_minimo.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.stock_minimo.errors }}</div>
+                                    {% endif %}
+                                </div> </div> </div>
+                        
+                        <hr>
+        
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-1"></i> Guardar
+                            </button>
+                            <a href="{% url 'inventario-list' %}" class="btn btn-secondary">
+                                Cancelar
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+{% endblock %}

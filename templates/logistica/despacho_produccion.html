@@ -1,0 +1,198 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Despacho a Producción{% endblock %}
+
+{% block content %}
+<style>
+    body {
+        background-color: #f8f9fb;
+    }
+
+    .card {
+        border: none;
+        border-radius: 16px; /* Coincide con tu dashboard */
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05); /* Sombra suave */
+    }
+
+    .card-header {
+        background-color: transparent;
+        border-bottom: none;
+        padding: 1.5rem 2rem 0 2rem;
+    }
+    
+    .card-header h6 {
+        font-weight: 700;
+        color: #4e5d73;
+        font-size: 1.1rem;
+    }
+
+    .card-body {
+        padding: 2rem;
+    }
+
+    /* --- Botón Principal Mejorado --- */
+    .btn-primary {
+        background-color: #5C6BC0; /* Un azul/índigo más suave y moderno */
+        border: none;
+        border-radius: 12px; /* Más redondeado */
+        padding: 0.75rem 1.5rem;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 12px rgba(92, 107, 192, 0.25);
+    }
+
+    .btn-primary:hover {
+        background-color: #3F51B5;
+        transform: translateY(-2px); /* Efecto de elevación */
+        box-shadow: 0 6px 16px rgba(92, 107, 192, 0.3);
+    }
+
+    /* --- Estilos de Tabla Limpios --- */
+    .table {
+        border: none; /* Sin borde exterior */
+    }
+
+    .table thead {
+        /* Eliminamos el fondo azul pesado */
+        background-color: transparent;
+        color: inherit; 
+    }
+
+    .table th {
+        font-weight: 600;
+        padding: 1rem;
+        vertical-align: middle;
+        /* Línea separadora como en tu imagen */
+        border-bottom: 1px solid #e3e6f0; 
+        border-top: none;
+        font-size: 0.9rem;
+        color: #6e707e; /* Texto de cabecera sutil */
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .table td {
+        color: #4e5d73;
+        padding: 1rem;
+        vertical-align: middle;
+        /* Línea separadora para cada fila */
+        border-top: 1px solid #e3e6f0; 
+    }
+    
+    /* --- Badges de Estado (Estilo Moderno/Pastel) --- */
+    .badge {
+        padding: 0.5em 1em;
+        border-radius: 20px; /* Forma de píldora */
+        font-size: 0.8rem;
+        font-weight: 700;
+    }
+
+    .badge-success {
+        background-color: #e6f4ea; /* Fondo verde pastel */
+        color: #188038; /* Texto verde oscuro */
+    }
+
+    .badge-danger {
+        background-color: #fdebee; /* Fondo rojo pastel */
+        color: #d93025; /* Texto rojo oscuro */
+    }
+    
+    .badge-warning {
+        background-color: #feefc3; /* Fondo amarillo pastel */
+        color: #E65100; /* Texto naranja/marrón */
+    }
+
+    h3.fw-semibold {
+        color: #333; /* Título principal un poco más oscuro */
+        font-weight: 700;
+    }
+
+    .text-gray-800 {
+        color: #4e5d73 !important;
+    }
+
+    .table-responsive {
+        border-radius: 12px;
+        overflow: hidden;
+    }
+</style>
+
+<div class="container-fluid py-4">
+    <div class="d-flex align-items-center justify-content-between mb-4">
+        <h3 class="fw-semibold text-secondary mb-0">
+            <i class="fas fa-shipping-fast text-primary me-2" style="color: #5C6BC0!important;"></i>
+            Despacho Diario a Producción
+        </h3>
+    </div>
+
+    <div class="card"> <div class="card-header">
+            <h6 class="text-muted mb-0">
+                <i class="fas fa-boxes me-2" style="color: #5C6BC0!important;"></i>
+                Demanda de Alimento (Calculada de Producción)
+            </h6>
+        </div>
+
+        <div class="card-body">
+            {% if total_items > 0 %}
+            <form method="POST" onsubmit="return confirm('¿Estás seguro de despachar estas cantidades? El stock se actualizará permanentemente.');">
+                {% csrf_token %}
+                <div class="table-responsive">
+                    <table class="table align-middle">
+                        <thead>
+                            <tr>
+                                <th>Insumo (Alimento)</th>
+                                <th>Demanda Diaria (Kg)</th>
+                                <th>Stock Actual (Kg)</th>
+                                <th>Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in data_despacho %}
+                            <tr>
+                                <td>
+                                    <input type="hidden" name="insumo_id" value="{{ item.insumo_id }}">
+                                    <input type="hidden" name="cantidad_kg" value="{{ item.demanda_kg }}">
+                                    <input type="hidden" name="insumo_nombre" value="{{ item.nombre }}">
+                                    <strong>{{ item.nombre }}</strong>
+                                </td>
+                                <td><strong>{{ item.demanda_kg|floatformat:2 }} Kg</strong></td>
+                                <td>{{ item.stock_actual|floatformat:2 }} Kg</td>
+                                <td>
+                                    {% if not item.insumo_id %}
+                                    <span class="badge badge-warning">
+                                        <i class="fas fa-search-minus me-1"></i> INSUMO NO ENCONTRADO
+                                    </span>
+                                    {% elif item.suficiente %}
+                                    <span class="badge badge-success">
+                                        <i class="fas fa-check-circle me-1"></i> STOCK SUFICIENTE
+                                    </span>
+                                    {% else %}
+                                    <span class="badge badge-danger">
+                                        <i class="fas fa-exclamation-circle me-1"></i> STOCK INSUFICIENTE
+                                    </span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                {% if data_despacho|length > 0 %}
+                <div class="mt-4 text-end">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-paper-plane me-2"></i> Despachar
+                    </button>
+                </div>
+                {% endif %}
+            </form>
+            {% else %}
+            <div class="alert alert-info" style="background-color: #e7f3fe; border-color: #d0e7fd; color: #055099; border-radius: 12px;">
+                <i class="fas fa-info-circle me-2"></i> No hay demanda de alimento registrada en Producción en este momento.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

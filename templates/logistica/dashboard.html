@@ -1,15 +1,161 @@
-{% extends "base.html" %}
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Dashboard Logística{% endblock %}
 
 {% block content %}
-<div class="text-center p-5 bg-light rounded-3">
-    <i class="bi bi-truck" style="font-size: 3rem; color: #6c757d;"></i>
-    <h1 class="display-5 mt-3">Módulo de Logística</h1>
-    <p class="lead text-muted">
-        Esta sección se encuentra actualmente en desarrollo.
-    </p>
+<div class="container-fluid app-bg py-4">
+
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-dark">Modulo de Logística</h1>
+    </div>
+
+    <div class="row g-4 mb-4">
+        <div class="col-xl-3 col-md-6">
+            <a href="{% url 'inventario-list' %}" class="text-decoration-none text-dark">
+                <div class="ui-card">
+                    <img src="{% static 'logistica/Inventario.jpeg' %}" alt="Inventario" class="card-image-top">
+                    <div class="card-image-body">
+                        <h6 class="fw-semibold mb-1">Inventario</h6>
+                        <p class="text-muted small">Ver y gestionar stock</p>
+                    </div>
+                </div>
+            </a>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <a href="{% url 'proveedor-list' %}" class="text-decoration-none text-dark">
+                <div class="ui-card">
+                    <img src="{% static 'logistica/Proveedores.jpeg' %}" alt="Proveedores" class="card-image-top">
+                    <div class="card-image-body">
+                        <h6 class="fw-semibold mb-1">Proveedores</h6>
+                        <p class="text-muted small">Administrar contactos</p>
+                    </div>
+                </div>
+            </a>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <a href="{% url 'ordencompra-list' %}" class="text-decoration-none text-dark">
+                <div class="ui-card">
+                    <img src="{% static 'logistica/Ordenes.jpeg' %}" alt="Órdenes" class="card-image-top">
+                    <div class="card-image-body">
+                        <h6 class="fw-semibold mb-1">Órdenes</h6>
+                        <p class="text-muted small">Crear y ver compras</p>
+                    </div>
+                </div>
+            </a>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <a href="{% url 'despacho-produccion' %}" class="text-decoration-none text-dark">
+                <div class="ui-card">
+                    <img src="{% static 'logistica/Despacho.jpeg' %}" alt="Despacho" class="card-image-top">
+                    <div class="card-image-body">
+                        <h6 class="fw-semibold mb-1">Despacho</h6>
+                        <p class="text-muted small">Enviar a Producción</p>
+                    </div>
+                </div>
+            </a>
+        </div>
+    </div>
+
     <hr class="my-4">
-    <p>
-        Aquí se gestionará el transporte, almacenamiento y distribución de los productos.
-    </p>
+
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-dark">Herramientas Adicionales</h1>
+    </div>
+
+    <div class="row g-4 justify-content-center">
+
+        <div class="col-xl-6 col-md-6">
+            <div class="card shadow-sm h-100 ui-card report-card">
+                <div class="card-body d-flex flex-column justify-content-center p-4">
+                    <i class="bi bi-graph-up-arrow fs-1 text-primary"></i>
+                    <h5 class="card-title mt-3">Reporte Gráfico</h5>
+                    <p class="card-text">Ver Entradas vs. Salidas</p>
+                    <div class="mt-auto pt-3">
+                        <a href="{% url 'reporte-grafico' %}" class="btn btn-outline-primary w-100">Ver Gráficos</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-6 col-md-6">
+            <div class="card shadow-sm h-100 ui-card report-card">
+                <div class="card-body d-flex flex-column justify-content-center p-4">
+                    <i class="bi bi-clipboard-data fs-1 text-success"></i>
+                    <h5 class="card-title mt-3">Resumen Mensual</h5>
+                    <p class="card-text">Ver balance de insumos</p>
+                    <div class="mt-auto pt-3">
+                        <a href="{% url 'reporte-resumen' %}" class="btn btn-outline-success w-100">Ver Reporte</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
+
+<style>
+    .app-bg {
+        background-color: #f8f9fa;
+    }
+
+    /* Las tarjetas de logística (con imagen) son más planas y tienen altura fija */
+    .ui-card {
+        border: 1px solid #e9ecef;
+        border-radius: 14px;
+        background-color: #fff;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+        transition: all 0.25s ease;
+        text-align: center;
+        padding: 0;
+        height: 260px;
+        /* Altura fija para tarjetas de logística */
+        overflow: hidden;
+    }
+
+    /* Eliminamos el estilo ui-card:hover para las tarjetas de reporte para usar el estilo de card de Bootstrap */
+    .ui-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.06);
+    }
+
+
+    /* Estilo para la imagen superior */
+    .card-image-top {
+        width: 100%;
+        height: 160px;
+        object-fit: cover;
+    }
+
+    /* Estilo para el contenedor del texto */
+    .card-image-body {
+        padding: 0.75rem 0.5rem 1rem 0.5rem;
+    }
+
+    /* Tarjetas de Reporte/Herramientas Adicionales */
+    .ui-card.report-card {
+        /* Reiniciamos la altura para que el Bootstrap card funcione mejor, pero la fijamos si es necesario */
+        height: 260px !important;
+        text-align: center;
+    }
+
+    /* Ajustes de color para los íconos (usando los colores predeterminados de Bootstrap) */
+    .text-primary {
+        color: #1a73e8 !important;
+    }
+
+    /* Azul */
+    .text-success {
+        color: #188038 !important;
+    }
+
+    /* Verde */
+
+    /* Ajuste para el botón de reporte, ya que report-card está fuera del <a> */
+    .report-card a {
+        text-decoration: none;
+    }
+</style>
 {% endblock %}

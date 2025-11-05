@@ -43,6 +43,11 @@ from .models import Lote, RegistroCondiciones
 from django.contrib import messages
 
 
+try:
+    from logistica.models import Insumo
+except ImportError:
+    Insumo = None
+
 from .forms import (
     BastidorForm, ArtesaForm, JaulaForm, LoteOvaCreateForm, 
     RegistroMortalidadForm, LoteTallaForm, LotePesoForm
@@ -626,6 +631,8 @@ def mover_lote_a_jaula(request, lote_id):
 
             # Promedio ponderado para talla
             nuevo_talla_min = ((lote_destino.cantidad_total_peces * lote_destino.talla_min_cm) + (cantidad * lote_origen.talla_min_cm)) / (lote_destino.cantidad_total_peces + cantidad)
+            
+            
             nuevo_talla_max = ((lote_destino.cantidad_total_peces * lote_destino.talla_max_cm) + (cantidad * lote_origen.talla_max_cm)) / (lote_destino.cantidad_total_peces + cantidad)
             
             lote_destino.cantidad_total_peces = F('cantidad_total_peces') + cantidad
@@ -857,11 +864,67 @@ def reasignar_engorde_json(request, lote_origen_id):
         return JsonResponse({'success': True, 'message': message})
     return JsonResponse({'error': 'Método no permitido'}, status=405)
 
+# @login_required
+# def get_notifications_json(request):
+#     notifications = []
+#     now = timezone.now()
+    
+#     if request.user.groups.filter(name='Produccion').exists() or request.user.is_staff:
+        
+#         lotes_ovas_vencidos = Lote.objects.filter(
+#             etapa_actual='OVAS',
+#             fecha_ingreso_etapa__lte=now.date() - timedelta(days=15)
+#         )
+#         for lote in lotes_ovas_vencidos:
+#             notifications.append({
+#                 'area': 'Producción',
+#                 'message': f"El lote {lote.codigo_lote} en {lote.bastidor} debe ser movido a artesa.",
+#                 'url': reverse_lazy('bastidor-list')
+#             })
+
+#         alevines_para_juvenil = Lote.objects.filter(
+#             etapa_actual='ALEVINES',
+#             talla_max_cm__gte=8
+#         )
+#         for lote in alevines_para_juvenil:
+#             notifications.append({
+#                 'area': 'Producción',
+#                 'message': f"El lote {lote.codigo_lote} en {lote.artesa} está listo para mover a jaula de juveniles.",
+#                 'url': reverse_lazy('artesa-list')
+#             })
+
+#         juveniles_para_engorde = Lote.objects.filter(
+#             etapa_actual='JUVENILES',
+#             talla_max_cm__gte=15
+#         )
+#         for lote in juveniles_para_engorde:
+#             notifications.append({
+#                 'area': 'Producción',
+#                 'message': f"El lote {lote.codigo_lote} en {lote.jaula} está listo para mover a jaula de engorde.",
+#                 'url': reverse_lazy('juvenil-list')
+#             })
+
+#     if request.user.groups.filter(name__in=['Comercializacion', 'Produccion']).exists() or request.user.is_staff:
+#         lotes_para_venta = Lote.objects.filter(
+#             etapa_actual='ENGORDE',
+#             talla_max_cm__gte=25
+#         )
+#         for lote in lotes_para_venta:
+#             notifications.append({
+#                 'area': 'Comercialización',
+#                 'message': f"El lote {lote.codigo_lote} en {lote.jaula} está listo para la venta.",
+#                 'url': reverse_lazy('engorde-list')
+#             })
+
+#     return JsonResponse(notifications, safe=False)
+
+
 @login_required
 def get_notifications_json(request):
     notifications = []
     now = timezone.now()
     
+    # --- Notificaciones de Producción (Tu código original) ---
     if request.user.groups.filter(name='Produccion').exists() or request.user.is_staff:
         
         lotes_ovas_vencidos = Lote.objects.filter(
@@ -897,6 +960,7 @@ def get_notifications_json(request):
                 'url': reverse_lazy('juvenil-list')
             })
 
+    # --- Notificaciones de Comercialización (Tu código original) ---
     if request.user.groups.filter(name__in=['Comercializacion', 'Produccion']).exists() or request.user.is_staff:
         lotes_para_venta = Lote.objects.filter(
             etapa_actual='ENGORDE',
@@ -909,8 +973,26 @@ def get_notifications_json(request):
                 'url': reverse_lazy('engorde-list')
             })
 
-    return JsonResponse(notifications, safe=False)
+    # ==========================================================
+    # INICIO DE LA MODIFICACIÓN (Añadir Alertas de Logística)
+    # ==========================================================
+    if (request.user.groups.filter(name='Logistica').exists() or request.user.is_staff) and Insumo is not None:
+        
+        # Buscar insumos con stock por debajo del mínimo
+        # (Usamos F para comparar dos campos del modelo)
+        alertas_stock = Insumo.objects.filter(stock_actual__lt=F('stock_minimo'))
+        
+        for insumo in alertas_stock:
+            notifications.append({
+                'area': 'Logística',
+                'message': f"¡Stock bajo! {insumo.nombre} (Actual: {insumo.stock_actual})",
+                'url': reverse_lazy('inventario-list') # URL del inventario de logística
+            })
+    # ==========================================================
+    # FIN DE LA MODIFICACIÓN
+    # ==========================================================
 
+    return JsonResponse(notifications, safe=False)
 
 @login_required
 @transaction.atomic
