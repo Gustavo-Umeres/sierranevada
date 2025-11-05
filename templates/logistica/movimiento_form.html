@@ -1,0 +1,83 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Registrar Movimiento Manual{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <h1 class="h3 mb-4 text-gray-800">Registrar Movimiento Manual</h1>
+
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Detalles del Movimiento</h6>
+        </div>
+        <div class="card-body">
+            <p class="text-muted">Use este formulario para registrar salidas a producción, mermas, pérdidas o ajustes de inventario.</p>
+            <form method="post">
+                {% csrf_token %}
+                
+                <div class="form-group row">
+                    <label class="col-sm-2 col-form-label">{{ form.insumo.label }}</label>
+                    <div class="col-sm-10">
+                        {{ form.insumo }}
+                        {% if form.insumo.errors %}<div class="invalid-feedback d-block">{{ form.insumo.errors }}</div>{% endif %}
+                    </div>
+                </div>
+
+                <div class="form-group row">
+                    <label class="col-sm-2 col-form-label">{{ form.tipo_movimiento.label }}</label>
+                    <div class="col-sm-10">
+                        {{ form.tipo_movimiento }}
+                        {% if form.tipo_movimiento.errors %}<div class="invalid-feedback d-block">{{ form.tipo_movimiento.errors }}</div>{% endif %}
+                    </div>
+                </div>
+
+                <div class="form-group row">
+                    <label class="col-sm-2 col-form-label">{{ form.cantidad.label }}</label>
+                    <div class="col-sm-10">
+                        {{ form.cantidad }}
+                        {% if form.cantidad.errors %}<div class="invalid-feedback d-block">{{ form.cantidad.errors }}</div>{% endif %}
+                        <small class="form-text text-muted">{{ form.cantidad.help_text }}</small>
+                    </div>
+                </div>
+                
+                <div class="form-group row">
+                    <label class="col-sm-2 col-form-label">{{ form.descripcion.label }}</label>
+                    <div class="col-sm-10">
+                        {{ form.descripcion }}
+                        {% if form.descripcion.errors %}<div class="invalid-feedback d-block">{{ form.descripcion.errors }}</div>{% endif %}
+                    </div>
+                </div>
+
+                <hr>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save"></i> Registrar Movimiento
+                </button>
+                <a href="{% url 'movimiento-list' %}" class="btn btn-secondary">
+                    Cancelar
+                </a>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+    form select, form input[type="text"], form input[type="number"], form textarea {
+        width: 100%;
+        padding: 0.375rem 0.75rem;
+        font-size: 1rem;
+        font-weight: 400;
+        line-height: 1.5;
+        color: #6e707e;
+        background-color: #fff;
+        background-clip: padding-box;
+        border: 1px solid #d1d3e2;
+        border-radius: 0.35rem;
+    }
+    form select:focus, form input:focus, form textarea:focus {
+        border-color: #858796;
+        outline: 0;
+        box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+    }
+</style>
+{% endblock %}

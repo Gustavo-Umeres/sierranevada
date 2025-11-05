@@ -1,0 +1,191 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Órdenes de Compra{% endblock %}
+
+{% block content %}
+<style>
+    body {
+        background-color: #f8f9fb;
+    }
+
+    .card {
+        border: none;
+        border-radius: 16px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    }
+
+    .card-header {
+        background-color: transparent;
+        border-bottom: none;
+        padding: 1.25rem 1.5rem 0 1.5rem;
+    }
+
+    .card-body {
+        padding: 2rem;
+    }
+
+    .btn-primary {
+        background-color: #4e73df;
+        border: none;
+        border-radius: 10px;
+        padding: 0.6rem 1.2rem;
+        transition: all 0.3s ease;
+    }
+
+    .btn-primary:hover {
+        background-color: #3c5dcc;
+    }
+
+    .table {
+        border: none;
+        border-radius: 10px;
+        overflow: hidden;
+    }
+
+    .table thead {
+        background-color: #4e73df;
+        color: #fff;
+    }
+
+    .table th {
+        font-weight: 600;
+        padding: 0.9rem;
+        vertical-align: middle;
+        border-bottom: none;
+    }
+
+    .table td {
+        color: #4e5d73;
+        padding: 0.8rem;
+        vertical-align: middle;
+    }
+
+    .btn-circle {
+        border-radius: 50%;
+        width: 32px;
+        height: 32px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .btn-secondary {
+        background-color: #858796;
+        border: none;
+    }
+
+    .btn-secondary:hover {
+        background-color: #6c6e78;
+    }
+
+    .btn-info {
+        background-color: #36b9cc;
+        border: none;
+    }
+
+    .btn-info:hover {
+        background-color: #2ca3b5;
+    }
+
+    .badge {
+        font-size: 0.85rem;
+        padding: 0.45em 0.7em;
+        border-radius: 8px;
+    }
+
+    h3.fw-semibold {
+        color: #4e5d73;
+        font-weight: 600;
+    }
+
+    h6.text-muted {
+        color: #4e73df !important;
+        font-weight: 600;
+    }
+
+    .text-gray-800 {
+        color: #4e5d73 !important;
+    }
+
+    .table-responsive {
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+    }
+</style>
+
+<div class="container-fluid py-4">
+    <div class="d-flex align-items-center justify-content-between mb-4">
+        <h3 class="fw-semibold text-secondary mb-0">
+            <i class="fas fa-file-invoice text-primary me-2"></i> Órdenes de Compra
+        </h3>
+        <a href="{% url 'ordencompra-create' %}" class="btn btn-primary d-flex align-items-center gap-2">
+            <i class="fas fa-plus"></i>
+            <span>Crear Nueva Orden</span>
+        </a>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-header">
+            <h6 class="text-muted mb-0">
+                <i class="fas fa-list text-primary me-2"></i> Historial de Órdenes
+            </h6>
+        </div>
+
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table align-middle">
+                    <thead>
+                        <tr>
+                            <th>Código</th>
+                            <th>Proveedor</th>
+                            <th>Fecha Creación</th>
+                            <th>Fecha Esperada</th>
+                            <th>Total</th>
+                            <th>Estado</th>
+                            <th class="text-center">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for orden in ordenes %}
+                        <tr>
+                            <td>{{ orden.codigo_orden }}</td>
+                            <td>{{ orden.proveedor.nombre }}</td>
+                            <td>{{ orden.fecha_creacion|date:"d/m/Y" }}</td>
+                            <td>{{ orden.fecha_esperada_entrega|date:"d/m/Y" }}</td>
+                            <td>S/ {{ orden.total_costo|floatformat:2 }}</td>
+                            <td>
+                                {% if orden.estado == 'RECIBIDA' %}
+                                <span class="badge bg-success">RECIBIDA</span>
+                                {% elif orden.estado == 'PENDIENTE' %}
+                                <span class="badge bg-warning text-dark">PENDIENTE</span>
+                                {% elif orden.estado == 'APROBADA' %}
+                                <span class="badge bg-info text-dark">APROBADA</span>
+                                {% else %}
+                                <span class="badge bg-danger">{{ orden.get_estado_display }}</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                <a href="{% url 'ordencompra-detail' orden.pk %}" class="btn btn-secondary btn-circle btn-sm" title="Ver Detalle">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                {% if orden.estado != 'RECIBIDA' %}
+                                <a href="{% url 'ordencompra-update' orden.pk %}" class="btn btn-info btn-circle btn-sm" title="Editar">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="text-center text-muted py-3">No hay órdenes de compra registradas.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,148 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Reporte Gráfico de Movimientos{% endblock %}
+
+{% block content %}
+<div class="container-fluid app-bg py-4">
+
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-dark">Reporte Gráfico de Movimientos</h1>
+        <div class="d-flex gap-2">
+            <select id="selectMes" name="month" class="form-select" style="min-width: 150px; border-radius: 12px; border: 1px solid #dee2e6; padding: 0.5rem 1rem;">
+                </select>
+            <select id="selectAnio" name="year" class="form-select" style="min-width: 100px; border-radius: 12px; border: 1px solid #dee2e6; padding: 0.5rem 1rem;">
+                </select>
+        </div>
+    </div>
+
+    <div class="status-card mb-4">
+        <h4 class="d-flex align-items-center">
+            <i class="fas fa-chart-line me-2" style="color: #5C6BC0;"></i>
+            Entradas vs. Salidas Diarias
+        </h4>
+        <div style="height: 450px;">
+            <canvas id="movimientosChart"></canvas>
+            <div id="chart-loading" class="text-center py-5">
+                <p class="mt-2">Cargando gráfico...</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.app-bg {
+    background-color: #f8f9fa;
+}
+.status-card {
+    border-radius: 12px;
+    border: 1px solid #dee2e6;
+    background-color: #fff;
+    padding: 1.5rem 2rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+}
+.status-card h4 {
+    font-weight: 600;
+    color: #212529;
+    margin-bottom: 1rem;
+}
+.status-card h4 i {
+    font-size: 1.2rem;
+}
+</style>
+{% endblock %}
+
+
+{% block scripts %} 
+{{ block.super }} <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    
+    const yearFilter = document.getElementById('selectAnio');
+    const monthFilter = document.getElementById('selectMes');
+    const chartContext = document.getElementById('movimientosChart').getContext('2d');
+    const chartLoading = document.getElementById('chart-loading');
+    let miGrafico; // Variable global para el gráfico
+
+    // Función para llenar los filtros (como en producción)
+    function populateFilters() {
+        const currentYear = new Date().getFullYear();
+        for (let y = currentYear; y >= 2023; y--) {
+            yearFilter.innerHTML += `<option value="${y}">${y}</option>`;
+        }
+        const monthNames = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+        for (let m = 0; m < 12; m++) {
+            monthFilter.innerHTML += `<option value="${m + 1}">${monthNames[m]}</option>`;
+        }
+        yearFilter.value = currentYear;
+        monthFilter.value = new Date().getMonth() + 1;
+    }
+
+    // Función para cargar los datos
+    function cargarDatos() {
+        let mes = monthFilter.value;
+        let anio = yearFilter.value;
+        
+        if (chartLoading) chartLoading.style.display = 'block';
+
+        // URL de la API de logística
+        const dataUrl = `{% url 'api-reporte-grafico' %}?month=${mes}&year=${anio}`;
+
+        fetch(dataUrl)
+            .then(response => response.json())
+            .then(data => {
+                
+                if (chartLoading) chartLoading.style.display = 'none';
+
+                if (miGrafico) {
+                    miGrafico.destroy();
+                }
+
+                miGrafico = new Chart(chartContext, {
+                    type: 'line',
+                    data: {
+                        labels: data.chart_labels, // ["01", "02", ...]
+                        datasets: [
+                            {
+                                label: 'Entradas (kg/un)',
+                                data: data.chart_data_entradas,
+                                borderColor: '#188038', // Verde
+                                backgroundColor: 'rgba(28, 200, 138, 0.1)',
+                                fill: true,
+                                tension: 0.3
+                            },
+                            {
+                                label: 'Salidas (kg/un)',
+                                data: data.chart_data_salidas,
+                                borderColor: '#d93025', // Rojo
+                                backgroundColor: 'rgba(217, 48, 37, 0.1)',
+                                fill: true,
+                                tension: 0.3
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: { y: { beginAtZero: true } },
+                        plugins: { legend: { position: 'top' } },
+                    }
+                });
+            })
+            .catch(error => {
+                console.error("Error al cargar datos del reporte:", error);
+                if (chartLoading) chartLoading.innerHTML = '<div class="text-danger">Error al cargar gráfico.</div>';
+            });
+    }
+
+    // Conectar los filtros (como en producción)
+    yearFilter.addEventListener('change', cargarDatos);
+    monthFilter.addEventListener('change', cargarDatos);
+
+    // Carga inicial (como en producción)
+    populateFilters();
+    cargarDatos();
+});
+</script>
+{% endblock %}

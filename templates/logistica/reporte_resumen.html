@@ -1,0 +1,94 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Reporte de Resumen Mensual{% endblock %}
+
+{% block content %}
+<div class="container-fluid app-bg py-4">
+
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-dark">Resumen de Inventario</h1>
+        <form id="filterForm" method="GET" class="d-flex gap-2">
+            <select name="month" class="form-select" style="min-width: 150px; border-radius: 12px; border: 1px solid #dee2e6; padding: 0.5rem 1rem;">
+                {% for mes in meses %}
+                    <option value="{{ mes.id }}" {% if mes.id == current_mes %}selected{% endif %}>
+                        {{ mes.nombre }}
+                    </option>
+                {% endfor %}
+            </select>
+            <select name="year" class="form-select" style="min-width: 100px; border-radius: 12px; border: 1px solid #dee2e6; padding: 0.5rem 1rem;">
+                {% for anio in anios %}
+                    <option value="{{ anio }}" {% if anio == current_anio %}selected{% endif %}>
+                        {{ anio }}
+                    </option>
+                {% endfor %}
+            </select>
+            <button type="submit" class="btn btn-primary" style="border-radius: 12px;">
+                <i class="fas fa-filter"></i> Filtrar
+            </button>
+        </form>
+    </div>
+
+    <div class="status-card">
+        <h4 class="d-flex align-items-center">
+            <i class="fas fa-calendar-alt me-2" style="color: #5C6BC0;"></i>
+            Balance de Insumos ({{ mes_nombre }})
+        </h4>
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>Insumo</th>
+                        <th>Saldo Inicial</th>
+                        <th>Total Entradas</th>
+                        <th>Total Salidas</th>
+                        <th>Saldo Final</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in resumen_data %}
+                    <tr>
+                        <td>
+                            {{ item.nombre }}
+                            <small class="text-muted d-block">({{ item.unidad }})</small>
+                        </td>
+                        <td>{{ item.saldo_inicial|floatformat:2 }}</td>
+                        <td class="text-success fw-bold">+{{ item.total_entradas|floatformat:2 }}</td>
+                        <td class="text-danger fw-bold">-{{ item.total_salidas|floatformat:2 }}</td>
+                        <td><strong>{{ item.saldo_final|floatformat:2 }}</strong></td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="text-center">No se encontraron movimientos para este período.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<style>
+.app-bg {
+    background-color: #f8f9fa;
+}
+.status-card {
+    border-radius: 12px;
+    border: 1px solid #dee2e6;
+    background-color: #fff;
+    padding: 1.5rem 2rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+}
+.status-card h4 {
+    font-weight: 600;
+    color: #212529;
+    margin-bottom: 1rem;
+}
+.status-card h4 i {
+    font-size: 1.2rem;
+}
+.table thead th {
+    background-color: #f8f9fa; /* Fondo claro para cabeceras de tabla */
+}
+</style>
+{% endblock %}
