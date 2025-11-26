@@ -58,6 +58,11 @@ class OrdenCompraForm(forms.ModelForm):
             'estado': forms.Select(attrs={'class': 'form-control'}),
         }
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Mostrar SOLO proveedores activos ↓↓↓
+        self.fields['proveedor'].queryset = Proveedor.objects.filter(estado=True)
+
 # --- FORMSET PARA DETALLES (CON ESTILO) ---
 
 class DetalleOrdenCompraForm(forms.ModelForm):
