@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-4">
+    <h1 class="h3 mb-4">Ventas al por menor - Punto de Venta</h1>
+    <div class="mb-3 d-flex justify-content-between">
+        <a href="{% url 'venta-pos-create' %}" class="btn btn-success">Nueva Venta POS</a>
+    </div>
+    <div class="card shadow-sm">
+        <div class="card-body p-0">
+            <table class="table table-striped mb-0">
+                <thead>
+                    <tr>
+                        <th>Código</th>
+                        <th>Fecha</th>
+                        <th>Cliente</th>
+                        <th>Lote</th>
+                        <th>Total (S/.)</th>
+                        <th>Pago</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for v in ventas %}
+                    <tr>
+                        <td>{{ v.codigo }}</td>
+                        <td>{{ v.fecha|date:"d/m/Y" }}</td>
+                        <td>{{ v.cliente }}</td>
+                        <td>{{ v.lote.codigo_lote }}</td>
+                        <td>{{ v.total_venta }}</td>
+                        <td>{{ v.get_tipo_pago_display }}</td>
+                        <td class="text-end">
+                            <a href="{% url 'venta-pos-detail' v.pk %}" class="btn btn-sm btn-outline-primary">Ver</a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="text-center py-3">No hay ventas POS registradas.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+
+
+

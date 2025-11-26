@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-4">
+    <h1 class="h3 mb-4">Venta POS {{ venta.codigo }}</h1>
+
+    <div class="mb-3">
+        <a href="{% url 'venta-pos-list' %}" class="btn btn-outline-secondary btn-sm">Volver al listado</a>
+    </div>
+
+    <div class="row">
+        <div class="col-md-5">
+            <div class="card mb-3 shadow-sm">
+                <div class="card-header">Datos de la Venta</div>
+                <div class="card-body">
+                    <p><strong>Fecha:</strong> {{ venta.fecha|date:"d/m/Y" }}</p>
+                    <p><strong>Cliente:</strong> {{ venta.cliente }}</p>
+                    <p><strong>Lote:</strong> {{ venta.lote.codigo_lote }}</p>
+                    <p><strong>Tipo de pago:</strong> {{ venta.get_tipo_pago_display }}</p>
+                    <p><strong>Total:</strong> S/ {{ venta.total_venta }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-7">
+            <div class="card mb-3 shadow-sm">
+                <div class="card-header">Detalle</div>
+                <div class="card-body p-0">
+                    <table class="table mb-0">
+                        <thead>
+                            <tr>
+                                <th>Descripción</th>
+                                <th>Cant. (kg)</th>
+                                <th>Precio (S/.)</th>
+                                <th>Subtotal</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for d in venta.detalles.all %}
+                            <tr>
+                                <td>{{ d.descripcion }}</td>
+                                <td>{{ d.cantidad_kg }}</td>
+                                <td>{{ d.precio_unitario_kg }}</td>
+                                <td>{{ d.subtotal }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="4" class="text-center py-3">Sin detalle registrado.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+
+
+

@@ -1,15 +1,195 @@
 {% extends "base.html" %}
+{% load static %}
 
 {% block content %}
-<div class="text-center p-5 bg-light rounded-3">
-    <i class="bi bi-graph-up-arrow" style="font-size: 3rem; color: #6c757d;"></i>
-    <h1 class="display-5 mt-3">Módulo de Comercialización</h1>
-    <p class="lead text-muted">
-        Esta sección se encuentra actualmente en desarrollo.
-    </p>
+<div class="container-fluid app-bg py-4">
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-dark">Módulo de Comercialización</h1>
+    </div>
+
+    {# SECCIÓN 1: Pedidos Mayoristas y Aprobación #}
+    <h2 class="h5 mb-3">1. Pedidos Mayoristas por Tonelaje</h2>
+    <div class="row g-4 mb-4">
+        <div class="col-xl-4 col-md-6">
+            <div class="card h-100 shadow-sm">
+                <div class="card-body d-flex flex-column justify-content-between">
+                    <div>
+                        <h5 class="card-title">Registrar Pedido Mayorista</h5>
+                        <p class="card-text text-muted small">
+                            Crear pedidos mayoristas vinculados a lotes de engorde disponibles.
+                        </p>
+                    </div>
+                    <div class="mt-3">
+                        <a href="{% url 'pedido-mayorista-create' %}" class="btn btn-primary w-100">Nuevo Pedido</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-4 col-md-6">
+            <div class="card h-100 shadow-sm">
+                <div class="card-body d-flex flex-column justify-content-between">
+                    <div>
+                        <h5 class="card-title">Listado de Pedidos Mayoristas</h5>
+                        <p class="card-text text-muted small">
+                            Ver el estado de pedidos (Pendiente, Aprobado, Despachado).
+                        </p>
+                    </div>
+                    <div class="mt-3">
+                        <a href="{% url 'pedido-mayorista-list' %}" class="btn btn-outline-primary w-100">Ver Pedidos</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-4 col-md-12">
+            <div class="card h-100 shadow-sm">
+                <div class="card-body d-flex flex-column justify-content-between">
+                    <div>
+                        <h5 class="card-title">Resumen Ventas Mayoristas</h5>
+                        <p class="card-text text-muted small">
+                            Total vendido (S/.) en ventas mayoristas.
+                        </p>
+                    </div>
+                    <div class="mt-3">
+                        <span class="h4">S/ {{ total_mayorista|default:"0.00" }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <hr class="my-4">
-    <p>
-        Aquí se gestionarán las ventas, clientes y reportes comerciales.
-    </p>
+
+    {# SECCIÓN 2: Venta al por menor - Punto de Venta #}
+    <h2 class="h5 mb-3">2. Venta al por menor - Punto de Venta</h2>
+    <div class="row g-4 mb-4">
+        <div class="col-xl-4 col-md-6">
+            <div class="card h-100 shadow-sm">
+                <div class="card-body d-flex flex-column justify-content-between">
+                    <div>
+                        <h5 class="card-title">Registrar Venta POS</h5>
+                        <p class="card-text text-muted small">
+                            Venta rápida en mostrador, descontando biomasa del lote.
+                        </p>
+                    </div>
+                    <div class="mt-3">
+                        <a href="{% url 'venta-pos-create' %}" class="btn btn-success w-100">Nueva Venta POS</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-4 col-md-6">
+            <div class="card h-100 shadow-sm">
+                <div class="card-body d-flex flex-column justify-content-between">
+                    <div>
+                        <h5 class="card-title">Historial POS</h5>
+                        <p class="card-text text-muted small">
+                            Listado de ventas por punto de venta.
+                        </p>
+                    </div>
+                    <div class="mt-3">
+                        <a href="{% url 'venta-pos-list' %}" class="btn btn-outline-success w-100">Ver Ventas POS</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-4 col-md-12">
+            <div class="card h-100 shadow-sm">
+                <div class="card-body d-flex flex-column justify-content-between">
+                    <div>
+                        <h5 class="card-title">Resumen Ventas POS</h5>
+                        <p class="card-text text-muted small">
+                            Total vendido (S/.) por punto de venta.
+                        </p>
+                    </div>
+                    <div class="mt-3">
+                        <span class="h4">S/ {{ total_pos|default:"0.00" }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <hr class="my-4">
+
+    {# SECCIÓN 3: Venta al por menor - Pedidos #}
+    <h2 class="h5 mb-3">3. Venta al por menor - Pedidos</h2>
+    <div class="row g-4 mb-4">
+        <div class="col-xl-4 col-md-6">
+            <div class="card h-100 shadow-sm">
+                <div class="card-body d-flex flex-column justify-content-between">
+                    <div>
+                        <h5 class="card-title">Registrar Pedido Minorista</h5>
+                        <p class="card-text text-muted small">
+                            Tomar pedidos para entrega futura a clientes minoristas.
+                        </p>
+                    </div>
+                    <div class="mt-3">
+                        <a href="{% url 'venta-pedido-create' %}" class="btn btn-warning w-100">Nuevo Pedido</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-4 col-md-6">
+            <div class="card h-100 shadow-sm">
+                <div class="card-body d-flex flex-column justify-content-between">
+                    <div>
+                        <h5 class="card-title">Listado de Pedidos Minoristas</h5>
+                        <p class="card-text text-muted small">
+                            Seguimiento de estados (Registrado, Preparado, Entregado).
+                        </p>
+                    </div>
+                    <div class="mt-3">
+                        <a href="{% url 'venta-pedido-list' %}" class="btn btn-outline-warning w-100">Ver Pedidos</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-4 col-md-12">
+            <div class="card h-100 shadow-sm">
+                <div class="card-body d-flex flex-column justify-content-between">
+                    <div>
+                        <h5 class="card-title">Resumen Ventas por Pedidos</h5>
+                        <p class="card-text text-muted small">
+                            Total vendido (S/.) en pedidos minoristas.
+                        </p>
+                    </div>
+                    <div class="mt-3">
+                        <span class="h4">S/ {{ total_pedidos|default:"0.00" }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <hr class="my-4">
+
+    {# SECCIÓN 4: Clientes y Reporte de Ventas #}
+    <h2 class="h5 mb-3">4. Clientes y Reporte de Ventas</h2>
+    <div class="row g-4">
+        <div class="col-xl-6 col-md-6">
+            <div class="card shadow-sm h-100">
+                <div class="card-body d-flex flex-column justify-content-center p-4">
+                    <i class="bi bi-people fs-1 text-primary"></i>
+                    <h5 class="card-title mt-3">Gestión de Clientes</h5>
+                    <p class="card-text">Registrar y actualizar clientes mayoristas y minoristas.</p>
+                    <div class="mt-auto pt-3">
+                        <a href="{% url 'cliente-list' %}" class="btn btn-outline-primary w-100">Ver Clientes</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-6 col-md-6">
+            <div class="card shadow-sm h-100">
+                <div class="card-body d-flex flex-column justify-content-center p-4">
+                    <i class="bi bi-graph-up-arrow fs-1 text-success"></i>
+                    <h5 class="card-title mt-3">Reporte de Ventas</h5>
+                    <p class="card-text">Filtrar ventas por tipo de venta y rango de fechas.</p>
+                    <div class="mt-auto pt-3">
+                        <a href="{% url 'reporte-ventas' %}" class="btn btn-outline-success w-100">Ver Reporte</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 {% endblock %}

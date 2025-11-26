@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-4">
+    <h1 class="h3 mb-4">Pedidos Mayoristas por Tonelaje</h1>
+    <div class="mb-3 d-flex justify-content-between">
+        <a href="{% url 'pedido-mayorista-create' %}" class="btn btn-primary">Nuevo Pedido Mayorista</a>
+    </div>
+    <div class="card shadow-sm">
+        <div class="card-body p-0">
+            <table class="table table-striped mb-0">
+                <thead>
+                    <tr>
+                        <th>Código</th>
+                        <th>Cliente</th>
+                        <th>Lote</th>
+                        <th>Toneladas</th>
+                        <th>Total (S/.)</th>
+                        <th>Estado</th>
+                        <th>Fecha</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in pedidos %}
+                    <tr>
+                        <td>{{ p.codigo }}</td>
+                        <td>{{ p.cliente }}</td>
+                        <td>{{ p.lote.codigo_lote }}</td>
+                        <td>{{ p.toneladas_solicitadas }}</td>
+                        <td>{{ p.total_venta }}</td>
+                        <td>
+                            <span class="badge bg-{% if p.estado == 'APROBADO' %}success{% elif p.estado == 'PENDIENTE' %}warning text-dark{% elif p.estado == 'RECHAZADO' %}danger{% else %}secondary{% endif %}">
+                                {{ p.get_estado_display }}
+                            </span>
+                        </td>
+                        <td>{{ p.fecha_creacion|date:"d/m/Y H:i" }}</td>
+                        <td class="text-end">
+                            <a href="{% url 'pedido-mayorista-detail' p.pk %}" class="btn btn-sm btn-outline-primary">Ver</a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="8" class="text-center py-3">No hay pedidos mayoristas registrados.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+
+
+

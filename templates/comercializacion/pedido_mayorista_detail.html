@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-4">
+    <h1 class="h3 mb-4">Pedido Mayorista {{ pedido.codigo }}</h1>
+
+    <div class="mb-3">
+        <a href="{% url 'pedido-mayorista-list' %}" class="btn btn-outline-secondary btn-sm">Volver al listado</a>
+        {% if pedido.estado == 'PENDIENTE' %}
+            <a href="{% url 'pedido-mayorista-aprobar' pedido.pk %}" class="btn btn-warning btn-sm">Aprobar / Rechazar</a>
+        {% endif %}
+        {% if pedido.estado == 'APROBADO' %}
+            <form method="post" action="{% url 'pedido-mayorista-despachar' pedido.pk %}" class="d-inline">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-success btn-sm">Marcar como Despachado</button>
+            </form>
+        {% endif %}
+    </div>
+
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card mb-3 shadow-sm">
+                <div class="card-header">
+                    Datos del Pedido
+                </div>
+                <div class="card-body">
+                    <p><strong>Cliente:</strong> {{ pedido.cliente }}</p>
+                    <p><strong>Lote:</strong> {{ pedido.lote.codigo_lote }}</p>
+                    <p><strong>Fecha creación:</strong> {{ pedido.fecha_creacion|date:"d/m/Y H:i" }}</p>
+                    <p><strong>Toneladas solicitadas:</strong> {{ pedido.toneladas_solicitadas }}</p>
+                    <p><strong>Precio por tonelada:</strong> S/ {{ pedido.precio_unitario_ton }}</p>
+                    <p><strong>Total:</strong> S/ {{ pedido.total_venta }}</p>
+                    <p><strong>Estado:</strong> {{ pedido.get_estado_display }}</p>
+                    {% if pedido.aprobado_por %}
+                        <p><strong>Aprobado por:</strong> {{ pedido.aprobado_por }}</p>
+                        <p><strong>Fecha aprobación:</strong> {{ pedido.fecha_aprobacion|date:"d/m/Y H:i" }}</p>
+                    {% endif %}
+                    {% if pedido.observaciones_aprobacion %}
+                        <p><strong>Observaciones:</strong><br>{{ pedido.observaciones_aprobacion }}</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card mb-3 shadow-sm">
+                <div class="card-header">
+                    Detalle de Tonelaje
+                </div>
+                <div class="card-body p-0">
+                    <table class="table mb-0">
+                        <thead>
+                            <tr>
+                                <th>Descripción</th>
+                                <th>Cant. (ton)</th>
+                                <th>Precio (S/.)</th>
+                                <th>Subtotal</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for d in pedido.detalles.all %}
+                            <tr>
+                                <td>{{ d.descripcion }}</td>
+                                <td>{{ d.cantidad_ton }}</td>
+                                <td>{{ d.precio_unitario_ton }}</td>
+                                <td>{{ d.subtotal }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="4" class="text-center py-3">Sin detalle registrado.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+
+
+
