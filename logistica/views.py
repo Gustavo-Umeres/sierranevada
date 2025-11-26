@@ -8,6 +8,8 @@ from django.db import transaction
 from decimal import Decimal
 from django.db.models import Sum, F, DecimalField
 from django.db.models.functions import Coalesce
+from django.views.decorators.http import require_POST
+
 
 import openpyxl
 from django.http import HttpResponse
@@ -85,6 +87,25 @@ class ProveedorListView(LogisticaPermissionMixin, ListView):
     context_object_name = 'proveedores'
     paginate_by = 20
 
+    def get_queryset(self):
+        return Proveedor.objects.all().order_by('-estado', 'nombre')
+
+
+@login_required
+@require_POST
+def toggle_proveedor(request, pk):
+    proveedor = get_object_or_404(Proveedor, pk=pk)
+    proveedor.estado = not proveedor.estado
+    proveedor.save()
+    estado_txt = "activado" if proveedor.estado else "desactivado"
+    messages.success(request, f"Proveedor {proveedor.nombre} {estado_txt}.")
+    return redirect('proveedor-list')  # ajusta si tu name es diferente
+# def toggle_proveedor(request, pk):
+#     proveedor = get_object_or_404(Proveedor, pk=pk)
+#     proveedor.estado = not proveedor.estado   
+#     proveedor.save()
+#     return redirect('proveedor-list')
+
 class ProveedorCreateView(LogisticaPermissionMixin, CreateView):
     model = Proveedor
     form_class = ProveedorForm
@@ -99,10 +120,32 @@ class ProveedorUpdateView(LogisticaPermissionMixin, UpdateView):
     success_url = reverse_lazy('proveedor-list')
     extra_context = {'titulo': 'Editar Proveedor'}
 
-class ProveedorDeleteView(LogisticaPermissionMixin, DeleteView):
-    model = Proveedor
+# class ProveedorDeleteView(LogisticaPermissionMixin, DeleteView):
+#     model = Proveedor
+#     template_name = 'logistica/confirm_delete.html'
+#     success_url = reverse_lazy('proveedor-list')
+
+class ProveedorDarDeBajaView(View):
+
+    success_url = reverse_lazy('proveedor-list') 
     template_name = 'logistica/confirm_delete.html'
-    success_url = reverse_lazy('proveedor-list')
+
+    def get(self, request, pk):
+        proveedor = get_object_or_404(Proveedor, pk=pk)
+        return render(request, self.template_name, {'object': proveedor, 'action_name': 'Dar de Baja'}) 
+
+    def post(self, request, pk):
+        """Procesa la confirmación y establece el proveedor como inactivo."""
+        proveedor = get_object_or_404(Proveedor, pk=pk)
+        
+        # Lógica de dar de baja:
+        # 1. Verificar si el proveedor ya tiene el campo 'activo' (del paso anterior).
+        if hasattr(proveedor, 'activo'):
+            proveedor.activo = False
+            proveedor.save()
+        
+        # 2. Redirigir al usuario.
+        return redirect(self.success_url)
 
 # ================================================================
 # ACTIVIDAD 4: ÓRDENES DE COMPRA
