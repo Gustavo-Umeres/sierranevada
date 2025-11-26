@@ -47,14 +47,15 @@ urlpatterns = [
     path('proveedores/', views.ProveedorListView.as_view(), name='proveedor-list'),
     path('proveedores/nuevo/', views.ProveedorCreateView.as_view(), name='proveedor-create'),
     path('proveedores/<int:pk>/editar/', views.ProveedorUpdateView.as_view(), name='proveedor-update'),
-    path('proveedores/<int:pk>/eliminar/', views.ProveedorDeleteView.as_view(), name='proveedor-delete'),
+    path('proveedores/<int:pk>/eliminar/', views.ProveedorDarDeBajaView.as_view(), name='proveedor-delete'),
 
     # Órdenes de Compra (Actividad 4)
     path('ordenes/', views.OrdenCompraListView.as_view(), name='ordencompra-list'),
     path('ordenes/nueva/', views.OrdenCompraCreateView.as_view(), name='ordencompra-create'),
     path('ordenes/<int:pk>/editar/', views.OrdenCompraUpdateView.as_view(), name='ordencompra-update'),
     path('ordenes/<int:pk>/', views.OrdenCompraDetailView.as_view(), name='ordencompra-detail'),
-    path('ordenes/<int:pk>/recibir/', views.recibir_orden_compra, name='ordencompra-recibir'), # POST
+    # path('ordenes/<int:pk>/recibir/', views.recibir_orden_compra, name='ordencompra-recibir'),
+    path('proveedores/<int:pk>/toggle/', views.toggle_proveedor, name='proveedor-toggle'),
 
     # Movimientos (Actividad 1)
     path('movimientos/', views.MovimientoInventarioListView.as_view(), name='movimiento-list'),
