@@ -12,7 +12,7 @@
             <select name="month" class="form-select"
                 style="min-width: 150px; border-radius: 12px; border: 1px solid #dee2e6; padding: 0.5rem 1rem;">
                 {% for mes in meses %}
-                <option value="{{ mes.id }}" {% if mes.id==current_mes %}selected{% endif %}>
+                <option value="{{ mes.id }}" {% if mes.id == current_mes %}selected{% endif %}>
                     {{ mes.nombre }}
                 </option>
                 {% endfor %}
@@ -20,7 +20,7 @@
             <select name="year" class="form-select"
                 style="min-width: 100px; border-radius: 12px; border: 1px solid #dee2e6; padding: 0.5rem 1rem;">
                 {% for anio in anios %}
-                <option value="{{ anio }}" {% if anio==current_anio %}selected{% endif %}>
+                <option value="{{ anio }}" {% if anio == current_anio %}selected{% endif %}>
                     {{ anio }}
                 </option>
                 {% endfor %}
